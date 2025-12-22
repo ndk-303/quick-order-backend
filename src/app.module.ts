@@ -1,33 +1,25 @@
-import { Module } from '@nestjs/common';
-import { ConfigModule, ConfigService } from '@nestjs/config';
-import { MongooseModule } from '@nestjs/mongoose';
-import { AuthModule } from './modules/auth/auth.module';
+import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
+import { DatabaseModule } from './database/database.module';
+import { LoggerMiddleware } from './common/middlewares/logging.middleware';
+
 import { RestaurantsModule } from './modules/restaurants/restaurants.module';
+import { TablesModule } from './modules/tables/tables.module';
 import { MenusModule } from './modules/menus/menus.module';
 import { OrdersModule } from './modules/orders/orders.module';
-import { KitchenModule } from './modules/kitchen/kitchen.module';
-import { NotificationsModule } from './modules/notifications/notifications.module';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({
-      isGlobal: true,
-    }),
-
-    MongooseModule.forRootAsync({
-      imports: [ConfigModule],
-      useFactory: (configService: ConfigService) => ({
-        uri: configService.get<string>('MONGODB_URI'),
-      }),
-      inject: [ConfigService],
-    }),
-
-    AuthModule,
+    ConfigModule.forRoot({ isGlobal: true }),
+    DatabaseModule, // Kết nối DB qua module riêng
     RestaurantsModule,
+    TablesModule,
     MenusModule,
     OrdersModule,
-    KitchenModule,
-    NotificationsModule,
   ],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(LoggerMiddleware).forRoutes('*');
+  }
+}
