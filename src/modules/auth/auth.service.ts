@@ -62,7 +62,7 @@ export class AuthService {
     };
 
     return {
-      accessToken: this.jwtService.signAsync(payload),
+      accessToken: this.jwtService.sign(payload),
       message: 'Đăng nhập thành công',
     };
   }
