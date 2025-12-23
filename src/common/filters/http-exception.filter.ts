@@ -21,7 +21,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
       status = exception.getStatus();
       const errorResponse = exception.getResponse();
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-      message = (errorResponse as string).message || exception.message;
+      message = (errorResponse as any).message || exception.message;
     } else if ((exception as any).code === 11000) {
       status = HttpStatus.CONFLICT;
       message = 'Dữ liệu đã tồn tại (Duplicate Key Error)';

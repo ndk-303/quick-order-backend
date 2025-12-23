@@ -8,6 +8,8 @@ import { TablesModule } from './modules/tables/tables.module';
 import { MenusModule } from './modules/menus/menus.module';
 import { OrdersModule } from './modules/orders/orders.module';
 import { UsersModule } from './modules/users/users.module';
+import { APP_GUARD } from '@nestjs/core';
+import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 
 @Module({
   imports: [
@@ -18,6 +20,12 @@ import { UsersModule } from './modules/users/users.module';
     MenusModule,
     OrdersModule,
     UsersModule,
+  ],
+  providers: [
+    {
+      provide: APP_GUARD,
+      useClass: JwtAuthGuard,
+    },
   ],
 })
 export class AppModule implements NestModule {
