@@ -1,8 +1,4 @@
-import {
-  Injectable,
-  BadRequestException,
-  ForbiddenException,
-} from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Order, OrderDocument, OrderStatus } from './schemas/order.schema';
@@ -54,6 +50,7 @@ export class OrdersService {
   }
 
   async create(createOrderDto: CreateOrderDto) {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { restaurant_id, table_id, table_token, items, lat, long } =
       createOrderDto;
 
@@ -64,19 +61,6 @@ export class OrdersService {
     });
     if (!table || !table.is_active)
       throw new BadRequestException('Bàn không hợp lệ hoặc Token sai!');
-
-    const restaurant = await this.restaurantModel.findById(restaurant_id);
-    if (!restaurant) throw new BadRequestException('Nhà hàng không tồn tại');
-
-    const [resLong, resLat] = restaurant.location.coordinates;
-
-    const distance = this.getDistanceFromLatLonInM(lat, long, resLat, resLong);
-
-    if (distance > restaurant.allowedRadius) {
-      throw new ForbiddenException(
-        `Bạn đang cách quán ${Math.round(distance)}m. Vui lòng di chuyển vào trong quán để đặt món!`,
-      );
-    }
 
     let totalAmount = 0;
     const snapshotItems: any[] = [];

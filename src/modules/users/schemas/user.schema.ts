@@ -21,6 +21,9 @@ export class User {
   @Prop({ required: true, enum: UserRole, default: UserRole.CLIENT })
   role: UserRole;
 
+  @Prop({ default: false })
+  isActive: boolean;
+
   @Prop({ type: Types.ObjectId, ref: 'Restaurant', required: false })
   restaurant_id?: Types.ObjectId;
 }

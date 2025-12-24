@@ -7,10 +7,12 @@ import {
   Patch,
   Post,
   Body,
+  UseGuards,
 } from '@nestjs/common';
 import { MenusService } from './menus.service';
 import { CreateMenuItemDto } from './dto/create-menu-item.dto';
 import { UpdateMenuItemDto } from './dto/update-menu-item.dto';
+import { GeoFencingGuard } from 'src/common/guards/geocoding.guard';
 
 @Controller('menus')
 export class MenusController {
@@ -21,9 +23,18 @@ export class MenusController {
     return this.menusService.create(createMenuItemDto);
   }
 
-  @Get()
-  findAll(@Query('restaurant_id') restaurantId: string) {
-    return this.menusService.findAllByRestaurant(restaurantId);
+  @UseGuards(GeoFencingGuard)
+  @Get('public/:restaurantId/:tableId')
+  async getMenu(
+    @Param('restaurantId') restaurantId: string,
+    @Param('tableId') tableId: string,
+    @Query('token') token: string,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    @Query('lat') lat: string,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    @Query('long') long: string,
+  ) {
+    return this.menusService.getMenuForClient(restaurantId, tableId, token);
   }
 
   @Get(':id')

@@ -25,12 +25,38 @@ export class MenusService {
     return newItem.save();
   }
 
-  // 2. Lấy danh sách món theo Nhà hàng (Admin xem)
-  async findAllByRestaurant(restaurantId: string): Promise<MenuItem[]> {
-    return this.menuItemModel.find({ restaurant_id: restaurantId }).exec();
+  async findAllByRestaurant(
+    restaurantId: string,
+    tableId: string,
+    token: string,
+  ) {
+    const table = await this.tableModel.findOne({
+      _id: tableId,
+      restaurant_id: restaurantId,
+      token: token,
+    });
+
+    if (!table) {
+      throw new BadRequestException('Mã QR không hợp lệ hoặc sai Token.');
+    }
+
+    if (!table.is_active) {
+      throw new BadRequestException('Bàn này hiện đang tạm ngưng phục vụ.');
+    }
+    const menuItems = await this.menuItemModel
+      .find({
+        restaurant_id: restaurantId,
+        is_available: true,
+      })
+      .exec();
+
+    return {
+      table_name: table.name,
+      restaurant_id: restaurantId,
+      items: menuItems,
+    };
   }
 
-  // 3. Lấy chi tiết 1 món
   async findOne(id: string): Promise<MenuItem> {
     const item = await this.menuItemModel.findById(id).exec();
     if (!item)
@@ -38,7 +64,6 @@ export class MenusService {
     return item;
   }
 
-  // 4. Cập nhật món ăn
   async update(
     id: string,
     updateMenuItemDto: UpdateMenuItemDto,
