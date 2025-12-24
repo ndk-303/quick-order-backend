@@ -11,10 +11,6 @@ import {
   Table,
   TableDocument,
 } from '../../modules/tables/schemas/table.schema';
-import {
-  Restaurant,
-  RestaurantDocument,
-} from '../../modules/restaurants/schemas/restaurant.schema';
 
 @Injectable()
 export class OrdersService {
@@ -22,32 +18,7 @@ export class OrdersService {
     @InjectModel(Order.name) private orderModel: Model<OrderDocument>,
     @InjectModel(MenuItem.name) private menuItemModel: Model<MenuItemDocument>,
     @InjectModel(Table.name) private tableModel: Model<TableDocument>,
-    @InjectModel(Restaurant.name)
-    private restaurantModel: Model<RestaurantDocument>,
   ) {}
-
-  private getDistanceFromLatLonInM(
-    lat1: number,
-    lon1: number,
-    lat2: number,
-    lon2: number,
-  ) {
-    const R = 6371e3;
-    const dLat = this.deg2rad(lat2 - lat1);
-    const dLon = this.deg2rad(lon2 - lon1);
-    const a =
-      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos(this.deg2rad(lat1)) *
-        Math.cos(this.deg2rad(lat2)) *
-        Math.sin(dLon / 2) *
-        Math.sin(dLon / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return R * c;
-  }
-
-  private deg2rad(deg: number) {
-    return deg * (Math.PI / 180);
-  }
 
   async create(createOrderDto: CreateOrderDto) {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
