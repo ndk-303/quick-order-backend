@@ -1,40 +1,55 @@
 import {
   Controller,
   Get,
-  Query,
   Param,
   Delete,
   Patch,
   Post,
   Body,
   UseGuards,
+  UseInterceptors,
+  UploadedFile,
+  BadRequestException,
+  ParseFilePipe,
+  FileTypeValidator,
 } from '@nestjs/common';
 import { MenusService } from './menus.service';
 import { CreateMenuItemDto } from './dto/create-menu-item.dto';
 import { UpdateMenuItemDto } from './dto/update-menu-item.dto';
 import { GeoFencingGuard } from 'src/common/guards/geocoding.guard';
+import { TableTokenGuard } from 'src/common/guards/table-token.guard';
+import { CloudinaryService } from 'src/common/services/cloudinary.service';
+import { FileInterceptor } from '@nestjs/platform-express';
 
 @Controller('menus')
 export class MenusController {
-  constructor(private readonly menusService: MenusService) {}
+  constructor(
+    private readonly menusService: MenusService,
+    private readonly cloudinaryService: CloudinaryService,
+  ) {}
 
   @Post()
-  create(@Body() createMenuItemDto: CreateMenuItemDto) {
-    return this.menusService.create(createMenuItemDto);
-  }
-
-  @UseGuards(GeoFencingGuard)
-  @Get('public/:restaurantId/:tableId')
-  async getMenu(
-    @Param('restaurantId') restaurantId: string,
-    @Param('tableId') tableId: string,
-    @Query('token') token: string,
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    @Query('lat') lat: string,
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    @Query('long') long: string,
+  @UseInterceptors(FileInterceptor('file'))
+  async create(
+    @Body() createMenuItemDto: CreateMenuItemDto,
+    @UploadedFile(
+      new ParseFilePipe({
+        validators: [new FileTypeValidator({ fileType: '.(png|jpeg|jpg)' })],
+        fileIsRequired: false,
+      }),
+    )
+    file: Express.Multer.File,
   ) {
-    return this.menusService.getMenuForClient(restaurantId, tableId, token);
+    if (file) {
+      const imageUrl = await this.cloudinaryService.uploadImage(file);
+      const data = {
+        ...createMenuItemDto,
+        image_url: imageUrl,
+      };
+      return this.menusService.create(data);
+    } else {
+      throw new BadRequestException('File ảnh không hợp lệ');
+    }
   }
 
   @Get(':id')
@@ -55,12 +70,17 @@ export class MenusController {
     return this.menusService.remove(id);
   }
 
-  @Get('public/:restaurantId/:tableId')
+  @Get(':restaurantId')
+  async getMenuForAdmin(@Param('restaurantId') restaurantId: string) {
+    return this.menusService.getMenuForAdmin(restaurantId);
+  }
+
+  @UseGuards(GeoFencingGuard, TableTokenGuard)
+  @Get(':restaurantId/:tableId')
   async getMenuForGuest(
     @Param('restaurantId') restaurantId: string,
     @Param('tableId') tableId: string,
-    @Query('token') token: string,
   ) {
-    return this.menusService.getMenuForClient(restaurantId, tableId, token);
+    return this.menusService.getMenuForClient(restaurantId, tableId);
   }
 }

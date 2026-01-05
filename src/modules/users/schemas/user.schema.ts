@@ -21,6 +21,9 @@ export class User {
   @Prop({ required: true, enum: UserRole, default: UserRole.CLIENT })
   role: UserRole;
 
+  @Prop({ select: false })
+  refreshToken?: string;
+
   @Prop({ default: false })
   isActive: boolean;
 

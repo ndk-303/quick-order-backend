@@ -12,15 +12,27 @@ import {
 } from '../../modules/tables/schemas/table.schema';
 import { CreateMenuItemDto } from './dto/create-menu-item.dto';
 import { UpdateMenuItemDto } from './dto/update-menu-item.dto';
+import { RestaurantDocument } from '../restaurants/schemas/restaurant.schema';
 
 @Injectable()
 export class MenusService {
   constructor(
     @InjectModel(MenuItem.name) private menuItemModel: Model<MenuItemDocument>,
     @InjectModel(Table.name) private tableModel: Model<TableDocument>,
+    @InjectModel(Table.name) private restaurantModel: Model<RestaurantDocument>,
   ) {}
 
   async create(createMenuItemDto: CreateMenuItemDto): Promise<MenuItem> {
+    const restaurantExists = await this.restaurantModel.exists({
+      _id: createMenuItemDto.restaurant_id,
+    });
+
+    if (!restaurantExists) {
+      throw new NotFoundException(
+        'Nhà hàng không tồn tại, không thể thêm món ăn.',
+      );
+    }
+
     const newItem = new this.menuItemModel(createMenuItemDto);
     return newItem.save();
   }
@@ -83,12 +95,14 @@ export class MenusService {
     if (!result) throw new NotFoundException(`Không tìm thấy món ăn để xóa`);
   }
 
-  async getMenuForClient(restaurantId: string, tableId: string, token: string) {
-    const table = await this.tableModel.findOne({
-      _id: tableId,
-      restaurant_id: restaurantId,
-      token: token,
-    });
+  async getMenuForClient(restaurantId: string, tableId: string) {
+    const table = await this.tableModel
+      .findOne({
+        _id: tableId,
+        restaurant_id: restaurantId,
+      })
+      .populate('restaurant_id')
+      .exec();
 
     if (!table) {
       throw new BadRequestException('Mã QR không hợp lệ hoặc đã hết hạn!');
@@ -106,9 +120,23 @@ export class MenusService {
       .exec();
 
     return {
-      restaurant_name: 'Tên quán lấy từ service restaurant...',
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+      restaurant_name: (table.restaurant_id as any).name,
       table_name: table.name,
       menu: menu,
+    };
+  }
+
+  async getMenuForAdmin(restaurantId: string) {
+    const items = await this.menuItemModel.find({
+      restaurant_id: restaurantId,
+    });
+
+    if (!items) throw new BadRequestException('Nhà hàng không tồn tại');
+
+    return {
+      message: 'Lấy menu thành công',
+      menu: items,
     };
   }
 }

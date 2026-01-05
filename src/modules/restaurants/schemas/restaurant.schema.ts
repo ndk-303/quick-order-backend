@@ -3,7 +3,7 @@ import { Document } from 'mongoose';
 
 export type RestaurantDocument = Restaurant & Document;
 
-@Schema({ timestamps: true }) // Tự động tạo createdAt, updatedAt
+@Schema({ timestamps: true })
 export class Restaurant {
   @Prop({ required: true })
   name: string;

@@ -7,14 +7,11 @@ export type TableDocument = Table & Document;
 @Schema({ timestamps: true })
 export class Table {
   @Prop({ type: String, required: true })
-  name: string; // Ví dụ: "Bàn 1", "VIP 2"
+  name: string;
 
   @Prop({ type: Types.ObjectId, ref: Restaurant.name, required: true })
-  restaurant_id: Types.ObjectId; // Sharding Key sau này
+  restaurant_id: Types.ObjectId;
 
-  // TOKEN BẢO MẬT:
-  // - Nếu in giấy: Token này cố định (Static).
-  // - Nếu dùng Tablet: Token này sẽ được cập nhật mỗi 5 phút (Dynamic).
   @Prop({ type: String, required: true })
   token: string;
 
