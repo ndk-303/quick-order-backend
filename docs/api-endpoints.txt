@@ -1,0 +1,129 @@
+API Endpoints - Quick-Order Backend
+
+---
+
+AUTH (src/modules/auth/auth.controller.ts)
+
+POST /auth/register
+- Input: RegisterDto { phoneNumber: string, password: string, fullName: string, address?: string }
+- Output: return của authService.register (thường là user created / tokens)
+- Notes: @Public
+
+POST /auth/login
+- Input: LoginDto { phoneNumber: string, password: string }
+- Output: { accessToken: string } và cookie "refresh_token" (httpOnly, secure, sameSite='none')
+- Notes: @Public
+
+POST /auth/refresh
+- Input: none cookie "refresh_token"
+- Output: { accessToken: string } và cập nhật cookie "refresh_token"; nếu không có cookie => 401 Unauthorized
+- Notes: @Public
+
+POST /auth/logout
+- Input: none (xóa cookie "refresh_token")
+- Output: { message: 'Logged out successfully' }
+
+---
+
+MENUS (src/modules/menus/menus.controller.ts)
+
+POST /menus
+- Input: CreateMenuItemDto + multipart file 'file' (image, png/jpeg/jpg)
+  CreateMenuItemDto: { name: string, description?: string, price: number, category: string }
+- Output: created menu item
+- Notes: File validated; BadRequest nếu file không hợp lệ
+
+GET /menus/:id
+- Input: :id
+- Output: menu item
+
+PATCH /menus/:id
+- Input: UpdateMenuItemDto (Partial<CreateMenuItemDto>)
+- Output: updated menu item
+
+DELETE /menus/:id
+- Input: :id
+- Output: removal result
+
+GET /menus/:restaurantId/:tableId
+- Input: restaurantId, tableId
+- Output: menu for guest (getMenuForClient)
+- Notes: Guards: GeoFencingGuard, TableTokenGuard
+
+GET /menus
+- Input: req.user (manager) → req.user.restaurantId
+- Output: menu list for admin
+- Notes: @Roles(UserRole.MANAGER)
+
+---
+
+USERS (src/modules/users/users.controller.ts)
+- Currently no endpoints (controller empty)
+
+---
+
+TABLES (src/modules/tables/tables.controller.ts)
+
+POST /tables
+- Input: body name: string
+- Output: created table
+
+POST /tables/:id/qr
+- Input: :id
+- Output: generated QR code
+
+GET /tables/:id
+- Input: :id
+- Output: table object
+
+GET /tables
+- Input: none
+- Output: list of tables
+
+PATCH /tables/:id
+- Input: UpdateTableDto (Partial<CreateTableDto> { name?: string, restaurant_id?: string })
+- Output: updated table
+
+DELETE /tables/:id
+- Input: :id
+- Output: deletion result
+
+---
+
+RESTAURANTS (src/modules/restaurants/restaurants.controller.ts)
+
+POST /restaurants
+- Input: CreateRestaurantDto { name: string, address: string, coordinates: number[] (length 2 [lng, lat]) } and req.user.userId
+- Output: created restaurant
+
+GET /restaurants
+- Input: none
+- Output: list of restaurants
+
+---
+
+ORDERS (src/modules/orders/orders.controller.ts)
+
+POST /orders
+- Input: CreateOrderDto { restaurant_id: string, table_id: string, items: [{ menu_item_id, quantity, selected_options?, note? }]}
+- Output: created order
+
+GET /orders
+- Input: query status?: OrderStatus
+- Output: list of orders filtered by restaurant/status
+
+GET /orders/:id
+- Input: :id
+- Output: one order
+
+PATCH /orders/:id
+- Input: body status: string (expected OrderStatus values)
+- Output: updated order status
+
+OrderStatus enum: PENDING, CONFIRMED, COOKING, READY, COMPLETED, CANCELLED
+
+---
+
+Notes:
+- File generated from controller sources in src/modules
+- If cần thêm, có thể export sang OpenAPI/CSV hoặc đọc service để mô tả cấu trúc output chính xác hơn.

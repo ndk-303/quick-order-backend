@@ -7,7 +7,7 @@ import {
   Query,
   Patch,
   Req,
-} from '@nestjs/common';  
+} from '@nestjs/common';
 import { OrdersService } from './orders.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { OrderStatus } from './schemas/order.schema';
@@ -33,8 +33,7 @@ export class OrdersController {
     return this.ordersService.findOne(id);
   }
 
-  // BẾP CẬP NHẬT TRẠNG THÁI (COOKING, COMPLETED...)
-  @Patch(':id/status')
+  @Patch(':id')
   updateStatus(@Param('id') id: string, @Body() status: string) {
     return this.ordersService.updateStatus(id, status);
   }
