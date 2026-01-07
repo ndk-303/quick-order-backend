@@ -37,10 +37,6 @@ export class CreateOrderDto {
   @IsNotEmpty()
   table_id: string;
 
-  @IsString()
-  @IsNotEmpty()
-  table_token: string;
-
   @IsArray()
   @ValidateNested({ each: true })
   @ArrayMinSize(1)

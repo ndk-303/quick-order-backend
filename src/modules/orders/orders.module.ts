@@ -7,6 +7,7 @@ import { Order, OrderSchema } from './schemas/order.schema';
 import { RestaurantsModule } from '../restaurants/restaurants.module';
 import { TablesModule } from '../tables/tables.module';
 import { MenusModule } from '../menus/menus.module';
+import { OrdersGateway } from './orders.gateway';
 
 @Module({
   imports: [
@@ -16,6 +17,6 @@ import { MenusModule } from '../menus/menus.module';
     MenusModule,
   ],
   controllers: [OrdersController],
-  providers: [OrdersService],
+  providers: [OrdersService, OrdersGateway],
 })
 export class OrdersModule {}

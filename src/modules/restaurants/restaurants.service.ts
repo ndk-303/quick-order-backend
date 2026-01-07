@@ -8,12 +8,16 @@ import { Model, Types } from 'mongoose';
 import { Restaurant, RestaurantDocument } from './schemas/restaurant.schema';
 import { CreateRestaurantDto } from './dto/create-restaurant.dto';
 import { UpdateRestaurantDto } from './dto/update-restaurant.dto';
+import { User, UserDocument } from '../users/schemas/user.schema';
+import { UserRole } from 'src/common/enums/user-role.enum';
 
 @Injectable()
 export class RestaurantsService {
   constructor(
     @InjectModel(Restaurant.name)
     private restaurantModel: Model<RestaurantDocument>,
+    @InjectModel(User.name)
+    private userModel: Model<UserDocument>,
   ) {}
 
   async create(
@@ -28,6 +32,8 @@ export class RestaurantsService {
         coordinates: createRestaurantDto.coordinates,
       },
     });
+
+    await this.userModel.findByIdAndUpdate(ownerId, { role: UserRole.MANAGER });
     return newRestaurant.save();
   }
 

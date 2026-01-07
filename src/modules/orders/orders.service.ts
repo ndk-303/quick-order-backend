@@ -1,4 +1,8 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Order, OrderDocument, OrderStatus } from './schemas/order.schema';
@@ -11,6 +15,7 @@ import {
   Table,
   TableDocument,
 } from '../../modules/tables/schemas/table.schema';
+import { OrdersGateway } from './orders.gateway';
 
 @Injectable()
 export class OrdersService {
@@ -18,17 +23,15 @@ export class OrdersService {
     @InjectModel(Order.name) private orderModel: Model<OrderDocument>,
     @InjectModel(MenuItem.name) private menuItemModel: Model<MenuItemDocument>,
     @InjectModel(Table.name) private tableModel: Model<TableDocument>,
+    private ordersGateway: OrdersGateway,
   ) {}
 
   async create(createOrderDto: CreateOrderDto) {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { restaurant_id, table_id, table_token, items, lat, long } =
-      createOrderDto;
+    const { restaurant_id, table_id, items } = createOrderDto;
 
     const table = await this.tableModel.findOne({
       _id: table_id,
-      restaurant_id: restaurant_id,
-      token: table_token,
     });
     if (!table || !table.is_active)
       throw new BadRequestException('Bàn không hợp lệ hoặc Token sai!');
@@ -67,7 +70,44 @@ export class OrdersService {
       total_amount: totalAmount,
       status: OrderStatus.PENDING,
     });
+    const savedOrder = await newOrder.save();
+    // 4. Bắn Socket báo cho Bếp/Thu ngân
+    this.ordersGateway.notifyNewOrder(restaurant_id, savedOrder);
 
-    return newOrder.save();
+    return {
+      message: 'Đặt hàng thành công',
+      orderId: savedOrder._id,
+    };
+  }
+
+  async findAll(restaurantId: string, status?: OrderStatus) {
+    const filter: any = { restaurant_id: restaurantId };
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    if (status) filter.status = status;
+    return this.orderModel
+      .find(filter)
+      .sort({ createdAt: -1 })
+      .select('-restaurant_id -createdAt -updatedAt -priority_score')
+      .exec();
+  }
+
+  async findOne(id: string) {
+    const order = await this.orderModel.findById(id).exec();
+    if (!order) throw new NotFoundException('Order not found');
+    return order;
+  }
+
+  async updateStatus(_id: string, status: string) {
+    const order = await this.orderModel.findByIdAndUpdate(
+      _id,
+      { status: status },
+      { new: true },
+    );
+
+    if (!order) throw new NotFoundException('Order not found');
+
+    this.ordersGateway.notifyOrderStatus(order.restaurant_id.toString(), order);
+
+    return order;
   }
 }

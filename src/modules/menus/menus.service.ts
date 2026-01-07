@@ -12,20 +12,24 @@ import {
 } from '../../modules/tables/schemas/table.schema';
 import { CreateMenuItemDto } from './dto/create-menu-item.dto';
 import { UpdateMenuItemDto } from './dto/update-menu-item.dto';
-import { RestaurantDocument } from '../restaurants/schemas/restaurant.schema';
+import {
+  Restaurant,
+  RestaurantDocument,
+} from '../restaurants/schemas/restaurant.schema';
 
 @Injectable()
 export class MenusService {
   constructor(
     @InjectModel(MenuItem.name) private menuItemModel: Model<MenuItemDocument>,
     @InjectModel(Table.name) private tableModel: Model<TableDocument>,
-    @InjectModel(Table.name) private restaurantModel: Model<RestaurantDocument>,
+    @InjectModel(Restaurant.name)
+    private restaurantModel: Model<RestaurantDocument>,
   ) {}
 
-  async create(createMenuItemDto: CreateMenuItemDto): Promise<MenuItem> {
-    const restaurantExists = await this.restaurantModel.exists({
-      _id: createMenuItemDto.restaurant_id,
-    });
+  async create(createMenuItemDto: CreateMenuItemDto) {
+    const restaurantExists = await this.restaurantModel.findById(
+      createMenuItemDto.restaurant_id,
+    );
 
     if (!restaurantExists) {
       throw new NotFoundException(
@@ -34,7 +38,8 @@ export class MenusService {
     }
 
     const newItem = new this.menuItemModel(createMenuItemDto);
-    return newItem.save();
+    newItem.save();
+    return { message: 'ok' };
   }
 
   async findAllByRestaurant(
@@ -101,7 +106,8 @@ export class MenusService {
         _id: tableId,
         restaurant_id: restaurantId,
       })
-      .populate('restaurant_id')
+      .select('_id name restaurant_id is_active')
+      .populate('restaurant_id', '_id name')
       .exec();
 
     if (!table) {
@@ -117,23 +123,23 @@ export class MenusService {
         restaurant_id: restaurantId,
         is_available: true,
       })
+      .select('-createdAt -updatedAt -restaurant_id')
       .exec();
 
     return {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
-      restaurant_name: (table.restaurant_id as any).name,
-      table_name: table.name,
+      table: table,
       menu: menu,
     };
   }
 
   async getMenuForAdmin(restaurantId: string) {
-    const items = await this.menuItemModel.find({
-      restaurant_id: restaurantId,
-    });
-
-    if (!items) throw new BadRequestException('Nhà hàng không tồn tại');
-
+    const items = await this.menuItemModel
+      .find({
+        restaurant_id: restaurantId,
+      })
+      .select('-createdAt -updatedAt -restaurant_id')
+      .exec();
     return {
       message: 'Lấy menu thành công',
       menu: items,
