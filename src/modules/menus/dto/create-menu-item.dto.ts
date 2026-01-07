@@ -39,6 +39,7 @@ class MenuItemConfigDto {
 export class CreateMenuItemDto {
   @IsMongoId()
   @IsNotEmpty()
+  @IsOptional()
   restaurant_id: string;
 
   @IsString()

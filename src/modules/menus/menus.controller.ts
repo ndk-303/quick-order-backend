@@ -34,6 +34,7 @@ export class MenusController {
   @Post()
   @UseInterceptors(FileInterceptor('file'))
   async create(
+    @Req() req: any,
     @Body() createMenuItemDto: CreateMenuItemDto,
     @UploadedFile(
       new ParseFilePipe({
@@ -48,6 +49,8 @@ export class MenusController {
       console.log(imageUrl);
       const data = {
         ...createMenuItemDto,
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+        restaurant_id: req.user.restaurantId,
         image_url: imageUrl,
       };
       return this.menusService.create(data);
