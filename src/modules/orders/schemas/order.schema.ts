@@ -7,11 +7,9 @@ export type OrderDocument = Order & Document;
 
 export enum OrderStatus {
   PENDING = 'PENDING',
-  CONFIRMED = 'CONFIRMED',
   COOKING = 'COOKING',
-  READY = 'READY',
   COMPLETED = 'COMPLETED',
-  CANCELLED = 'CANCELLED',
+  CANCELLED = 'CANCELED',
 }
 
 class OrderItemSnapshot {

@@ -45,15 +45,9 @@ export class MenusController {
     file: Express.Multer.File,
   ) {
     if (file) {
-      const imageUrl = await this.cloudinaryService.uploadImage(file);
-      console.log(imageUrl);
-      const data = {
-        ...createMenuItemDto,
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
-        restaurant_id: req.user.restaurantId,
-        image_url: imageUrl,
-      };
-      return this.menusService.create(data);
+      const imageUrl = await this.cloudinaryService.uploadMenuImage(file);
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      return this.menusService.create(req.user.restaurantId, createMenuItemDto);
     } else {
       throw new BadRequestException('File ảnh không hợp lệ');
     }

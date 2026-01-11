@@ -80,15 +80,19 @@ export class OrdersService {
     };
   }
 
-  async findAll(restaurantId: string, status?: OrderStatus) {
-    const filter: any = { restaurant_id: restaurantId };
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-    if (status) filter.status = status;
-    return this.orderModel
-      .find(filter)
+  async findAll(restaurantId: string) {
+    const tables = await this.orderModel
+      .find({ restaurant_id: restaurantId })
       .sort({ createdAt: -1 })
-      .select('-restaurant_id -createdAt -updatedAt -priority_score')
+      .populate({
+        path: 'table_id',
+        model: Table.name,
+        select: 'name',
+      })
+      .select('-createdAt -updatedAt -priority_score')
       .exec();
+
+    return tables;
   }
 
   async findOne(id: string) {
@@ -98,12 +102,9 @@ export class OrdersService {
   }
 
   async updateStatus(_id: string, status: string) {
-    const order = await this.orderModel.findByIdAndUpdate(
-      _id,
-      { status: status },
-      { new: true },
-    );
-
+    const order = await this.orderModel.findByIdAndUpdate(_id, {
+      status: status,
+    });
     if (!order) throw new NotFoundException('Order not found');
 
     this.ordersGateway.notifyOrderStatus(order.restaurant_id.toString(), order);

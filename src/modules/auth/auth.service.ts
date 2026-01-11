@@ -11,18 +11,12 @@ import { RegisterDto } from './dto/register.dto';
 import { comparePassword, hashPassword } from 'src/common/utils/password.util';
 import { LoginDto } from './dto/login.dto';
 import { Payload } from 'src/common/interfaces/payload.interface';
-import {
-  Restaurant,
-  RestaurantDocument,
-} from '../restaurants/schemas/restaurant.schema';
 
 @Injectable()
 export class AuthService {
   constructor(
     @InjectModel(User.name) private userModel: Model<UserDocument>,
     private jwtService: JwtService,
-    @InjectModel(Restaurant.name)
-    private restaurantModel: Model<RestaurantDocument>,
   ) {}
 
   async register(registerDto: RegisterDto) {
@@ -62,7 +56,7 @@ export class AuthService {
       throw new UnauthorizedException('Sai mật khẩu');
     }
 
-    const { accessToken, refreshToken } = await this.generateTokens(user);
+    const { accessToken, refreshToken } = this.generateTokens(user);
 
     await this.userModel.updateOne(
       { _id: user._id },
@@ -96,7 +90,7 @@ export class AuthService {
         throw new UnauthorizedException('Refresh token không hợp lệ');
       }
 
-      const tokens = await this.generateTokens(user);
+      const tokens = this.generateTokens(user);
 
       await this.userModel.updateOne(
         { _id: user._id },
@@ -109,15 +103,11 @@ export class AuthService {
     }
   }
 
-  private async generateTokens(user: UserDocument) {
-    const restaurant = await this.restaurantModel.findOne({
-      ownerId: user._id.toString(),
-    });
-
+  private generateTokens(user: UserDocument) {
     const payload = {
       sub: user._id.toString(),
       role: user.role,
-      restaurantId: restaurant?._id?.toString(),
+      restaurantId: user?.restaurantId,
     };
 
     console.log(payload.restaurantId);

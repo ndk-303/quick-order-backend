@@ -1,8 +1,4 @@
-import {
-  BadRequestException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import * as QRCode from 'qrcode';
@@ -10,10 +6,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { Table, TableDocument } from './schemas/table.schema';
 import { UpdateTableDto } from './dto/update-table.dto';
 import { ConfigService } from '@nestjs/config';
-import {
-  Restaurant,
-  RestaurantDocument,
-} from '../restaurants/schemas/restaurant.schema';
+import { CreateTableDto } from './dto/create-table.dto';
 
 @Injectable()
 export class TablesService {
@@ -21,34 +14,28 @@ export class TablesService {
     @InjectModel(Table.name)
     private readonly tableModel: Model<TableDocument>,
     private readonly configService: ConfigService,
-    @InjectModel(Restaurant.name)
-    private readonly restaurantModel: Model<RestaurantDocument>,
   ) {}
 
-  async create(name: string, userId: string) {
+  async create(createTableDto: CreateTableDto, restaurantId: string) {
     const token = uuidv4();
 
-    const restaurant = await this.restaurantModel.findOne({ ownerId: userId });
-    if (!restaurant) {
-      throw new BadRequestException('Nhà hàng không tồn tại');
-    }
+    const { name, capacity } = createTableDto;
+    console.log(createTableDto);
 
     const table = await this.tableModel.create({
       name: name,
-      restaurant_id: restaurant._id,
+      capacity: capacity,
+      restaurant: restaurantId,
       token,
     });
 
-    const FRONTEND_URL = this.configService.get<string>('FRONTEND_URL');
-
     // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
-    const qrUrl = `${FRONTEND_URL}/menu/${table.restaurant_id}/${table._id}?token=${table.token}`;
-
+    const qrUrl = `/menus/${table.restaurant}/${table._id}?token=${table.token}`;
     const qrImage = await QRCode.toDataURL(qrUrl);
-
+    await this.tableModel.findByIdAndUpdate(table._id, { qrImage: qrImage });
     return {
       tableId: table._id,
-      qr_image: qrImage,
+      qrImage: qrImage,
     };
   }
 
@@ -59,10 +46,8 @@ export class TablesService {
       throw new NotFoundException('Table not found');
     }
 
-    const FRONTEND_URL = this.configService.get<string>('FRONTEND_URL');
-
     // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
-    const qrUrl = `${FRONTEND_URL}/menu/${table.restaurant_id}/${table._id}?token=${table.token}`;
+    const qrUrl = `$/menus/${table.restaurant}/${table._id}?token=${table.token}`;
 
     const qrImage = await QRCode.toDataURL(qrUrl);
 
@@ -72,13 +57,15 @@ export class TablesService {
     };
   }
 
-  async findAllByRestaurant(userId: string) {
-    const restaurant = await this.restaurantModel.findOne({ ownerId: userId });
-    if (!restaurant) {
-      throw new BadRequestException('Nhà hàng không tồn tại');
-    }
+  async findAllByRestaurant(restaurantId: string) {
+    // const restaurant = await this.restaurantModel.findOne({ ownerId: userId });
+    // if (!restaurant) {
+    //   throw new BadRequestException('Nhà hàng không tồn tại');
+    // }
 
-    return await this.tableModel.find({ restaurant_id: restaurant._id });
+    return await this.tableModel
+      .find({ restaurant: restaurantId })
+      .select('-restaurant -token');
   }
 
   async findById(id: string) {
@@ -97,8 +84,9 @@ export class TablesService {
   }
 
   async update(_id: string, updateTableDto: UpdateTableDto) {
+    console.log(updateTableDto);
     const table = await this.tableModel.findByIdAndUpdate(_id, updateTableDto);
-
+    console.log(table);
     if (!table) {
       throw new NotFoundException('Table not found');
     }

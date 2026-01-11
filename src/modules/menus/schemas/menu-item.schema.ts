@@ -38,7 +38,7 @@ export class MenuItem {
     ref: Restaurant.name,
     required: true,
   })
-  restaurant_id: mongoose.Types.ObjectId;
+  restaurant: mongoose.Types.ObjectId;
 
   @Prop({ default: true })
   is_available: boolean;
@@ -46,7 +46,7 @@ export class MenuItem {
   @Prop({ type: [MenuItemConfig], default: [] })
   options: MenuItemConfig[];
 
-  @Prop({ enum: MenuCategory, required: true })
+  @Prop({ enum: MenuCategory, required: false })
   category: MenuCategory;
 }
 

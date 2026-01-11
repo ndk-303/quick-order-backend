@@ -7,19 +7,12 @@ import { AuthService } from './auth.service';
 import { User, UserSchema } from '../users/schemas/user.schema';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { AuthController } from './auth.controller';
-import {
-  Restaurant,
-  RestaurantSchema,
-} from '../restaurants/schemas/restaurant.schema';
 
 @Module({
   imports: [
     PassportModule,
     ConfigModule,
     MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]),
-    MongooseModule.forFeature([
-      { name: Restaurant.name, schema: RestaurantSchema },
-    ]),
     JwtModule.registerAsync({
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => ({

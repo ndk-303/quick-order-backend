@@ -1,5 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
+import { Document, Types } from 'mongoose';
+import { RestaurantType } from './restaurant-types.schema';
 
 export type RestaurantDocument = Restaurant & Document;
 
@@ -10,9 +11,6 @@ export class Restaurant {
 
   @Prop()
   address: string;
-
-  @Prop({ required: true })
-  ownerId: string;
 
   @Prop({
     type: {
@@ -33,6 +31,24 @@ export class Restaurant {
 
   @Prop({ default: 50 })
   allowedRadius: number;
+
+  @Prop()
+  rating: number;
+
+  @Prop()
+  review: number;
+
+  @Prop()
+  priceRange: string;
+
+  @Prop()
+  imageUrl: string;
+
+  @Prop({ type: Types.ObjectId, ref: RestaurantType.name })
+  type: Types.ObjectId;
+
+  @Prop()
+  openTime: string;
 }
 
 export const RestaurantSchema = SchemaFactory.createForClass(Restaurant);

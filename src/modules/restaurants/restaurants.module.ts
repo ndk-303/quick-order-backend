@@ -3,17 +3,23 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { Restaurant, RestaurantSchema } from './schemas/restaurant.schema';
 import { RestaurantsService } from './restaurants.service';
 import { RestaurantsController } from './restaurants.controller';
-import { User, UserSchema } from '../users/schemas/user.schema';
+import { CloudinaryService } from 'src/common/services/cloudinary.service';
+import {
+  RestaurantType,
+  RestaurantTypeSchema,
+} from './schemas/restaurant-types.schema';
 
 @Module({
   imports: [
     MongooseModule.forFeature([
       { name: Restaurant.name, schema: RestaurantSchema },
     ]),
-    MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]),
+    MongooseModule.forFeature([
+      { name: RestaurantType.name, schema: RestaurantTypeSchema },
+    ]),
   ],
   controllers: [RestaurantsController],
-  providers: [RestaurantsService],
+  providers: [RestaurantsService, CloudinaryService],
   exports: [RestaurantsService],
 })
 export class RestaurantsModule {}

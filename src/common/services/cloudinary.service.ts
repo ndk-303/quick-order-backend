@@ -13,11 +13,14 @@ export class CloudinaryService {
     });
   }
 
-  async uploadImage(file: Express.Multer.File): Promise<string> {
+  async uploadImage(
+    folder: string,
+    file: Express.Multer.File,
+  ): Promise<string> {
     return new Promise((resolve, reject) => {
       const uploadStream = cloudinary.uploader.upload_stream(
         {
-          folder: 'restaurant_menus',
+          folder,
           resource_type: 'auto',
         },
         (error, result) => {
@@ -33,5 +36,13 @@ export class CloudinaryService {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access
       Readable.from(file.buffer).pipe(uploadStream);
     });
+  }
+
+  async uploadMenuImage(file: Express.Multer.File) {
+    return await this.uploadImage('restaurant_menus', file);
+  }
+
+  async uploadRestaurantImage(file: Express.Multer.File) {
+    return await this.uploadImage('restaurants', file);
   }
 }

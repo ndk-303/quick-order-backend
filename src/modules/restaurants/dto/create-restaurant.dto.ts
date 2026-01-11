@@ -20,6 +20,20 @@ export class CreateRestaurantDto {
   @ArrayMinSize(2)
   @ArrayMaxSize(2)
   @IsNumber({}, { each: true })
-  // Input sẽ là mảng [Kinh độ, Vĩ độ]
   coordinates: number[];
+
+  @IsNumber()
+  rating: number;
+
+  @IsNumber()
+  review: number;
+
+  @IsString()
+  priceRange: string;
+
+  @IsString()
+  cuisine: string;
+
+  @IsString()
+  openTime: string;
 }

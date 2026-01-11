@@ -10,15 +10,16 @@ import {
 } from '@nestjs/common';
 import { TablesService } from './tables.service';
 import { UpdateTableDto } from './dto/update-table.dto';
+import { CreateTableDto } from './dto/create-table.dto';
 
 @Controller('tables')
 export class TablesController {
   constructor(private readonly tablesService: TablesService) {}
 
   @Post()
-  create(@Body() name: string, @Req() req: any) {
+  create(@Body() createTableDto: CreateTableDto, @Req() req: any) {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access
-    return this.tablesService.create(name, req.user.userId);
+    return this.tablesService.create(createTableDto, req.user.restaurantId);
   }
 
   @Post(':id/qr')
@@ -32,9 +33,9 @@ export class TablesController {
   }
 
   @Get()
-  findAll(@Body() name: string, @Req() req: any) {
+  findAll(@Req() req: any) {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access
-    return this.tablesService.findAllByRestaurant(req.user.userId);
+    return this.tablesService.findAllByRestaurant(req.user.restaurantId);
   }
 
   @Patch(':id')

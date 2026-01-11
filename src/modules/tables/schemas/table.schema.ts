@@ -9,11 +9,17 @@ export class Table {
   @Prop({ type: String, required: true })
   name: string;
 
+  @Prop()
+  capacity: number;
+
   @Prop({ type: Types.ObjectId, ref: Restaurant.name, required: true })
-  restaurant_id: Types.ObjectId;
+  restaurant: Types.ObjectId;
 
   @Prop({ type: String, required: true })
   token: string;
+
+  @Prop({ type: String, required: false })
+  qrImage: string;
 
   @Prop({ default: true })
   is_active: boolean;

@@ -8,32 +8,31 @@ import { Model, Types } from 'mongoose';
 import { Restaurant, RestaurantDocument } from './schemas/restaurant.schema';
 import { CreateRestaurantDto } from './dto/create-restaurant.dto';
 import { UpdateRestaurantDto } from './dto/update-restaurant.dto';
-import { User, UserDocument } from '../users/schemas/user.schema';
-import { UserRole } from 'src/common/enums/user-role.enum';
+import {
+  RestaurantType,
+  RestaurantTypeDocument,
+} from './schemas/restaurant-types.schema';
+import { CreateRestaurantTypeDto } from './dto/create-restaurant-type.dto';
+import slugify from 'slugify';
 
 @Injectable()
 export class RestaurantsService {
   constructor(
     @InjectModel(Restaurant.name)
     private restaurantModel: Model<RestaurantDocument>,
-    @InjectModel(User.name)
-    private userModel: Model<UserDocument>,
+    @InjectModel(RestaurantType.name)
+    private restaurantTypeModel: Model<RestaurantTypeDocument>,
   ) {}
 
-  async create(
-    createRestaurantDto: CreateRestaurantDto,
-    ownerId: string,
-  ): Promise<Restaurant> {
+  async create(createRestaurantDto: CreateRestaurantDto): Promise<Restaurant> {
     const newRestaurant = new this.restaurantModel({
       ...createRestaurantDto,
-      ownerId,
       location: {
         type: 'Point',
         coordinates: createRestaurantDto.coordinates,
       },
     });
 
-    await this.userModel.findByIdAndUpdate(ownerId, { role: UserRole.MANAGER });
     return newRestaurant.save();
   }
 
@@ -80,5 +79,24 @@ export class RestaurantsService {
     }
     await this.restaurantModel.deleteOne({ _id });
     return { message: 'Xóa thành công' };
+  }
+
+  async createRestaurantType(createTypeDto: CreateRestaurantTypeDto) {
+    const slug = slugify(createTypeDto.name, {
+      lower: true,
+      strict: true,
+      locale: 'vi',
+    });
+
+    const exists = await this.restaurantTypeModel.findOne({ slug });
+    if (exists) {
+      throw new BadRequestException('Restaurant type already exists');
+    }
+
+    return this.restaurantTypeModel.create({
+      name: createTypeDto.name,
+      slug,
+      imageUrl: createTypeDto.imageUrl,
+    });
   }
 }

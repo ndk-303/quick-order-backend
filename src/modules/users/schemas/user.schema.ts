@@ -28,7 +28,7 @@ export class User {
   isActive: boolean;
 
   @Prop({ type: Types.ObjectId, ref: 'Restaurant', required: false })
-  restaurant_id?: Types.ObjectId;
+  restaurantId?: Types.ObjectId;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

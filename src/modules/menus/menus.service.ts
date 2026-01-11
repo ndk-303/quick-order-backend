@@ -26,10 +26,8 @@ export class MenusService {
     private restaurantModel: Model<RestaurantDocument>,
   ) {}
 
-  async create(createMenuItemDto: CreateMenuItemDto) {
-    const restaurantExists = await this.restaurantModel.findById(
-      createMenuItemDto.restaurant_id,
-    );
+  async create(restaurantId, createMenuItemDto: CreateMenuItemDto) {
+    const restaurantExists = await this.restaurantModel.findById(restaurantId);
 
     if (!restaurantExists) {
       throw new NotFoundException(
@@ -37,7 +35,13 @@ export class MenusService {
       );
     }
 
-    const newItem = new this.menuItemModel(createMenuItemDto);
+    const data = {
+      ...createMenuItemDto,
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+      restaurant: restaurantId,
+    };
+
+    const newItem = new this.menuItemModel(data);
     newItem.save();
     return { message: 'ok' };
   }
@@ -73,8 +77,8 @@ export class MenusService {
         _id: tableId,
         restaurant_id: restaurantId,
       })
-      .select('_id name restaurant_id is_active')
-      .populate('restaurant_id', '_id name')
+      .select('_id name restaurant is_active')
+      .populate('restaurant', '_id name')
       .exec();
 
     if (!table) {
@@ -90,7 +94,7 @@ export class MenusService {
         restaurant_id: restaurantId,
         is_available: true,
       })
-      .select('-createdAt -updatedAt -restaurant_id')
+      .select('-createdAt -updatedAt -restaurant')
       .exec();
 
     return {
@@ -103,9 +107,9 @@ export class MenusService {
   async getMenuForAdmin(restaurantId: string) {
     const items = await this.menuItemModel
       .find({
-        restaurant_id: restaurantId,
+        restaurant: restaurantId,
       })
-      .select('-createdAt -updatedAt -restaurant_id')
+      .select('-createdAt -updatedAt -restaurant')
       .exec();
     return {
       message: 'Lấy menu thành công',
