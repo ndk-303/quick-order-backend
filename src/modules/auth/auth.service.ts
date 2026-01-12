@@ -46,15 +46,20 @@ export class AuthService {
   async login(loginDto: LoginDto) {
     const { phoneNumber, password } = loginDto;
 
-    const user = await this.userModel.findOne({ phoneNumber });
+    const user = await this.userModel
+      .findOne({ phoneNumber })
+      .select('_id fullName password');
     if (!user) {
       throw new UnauthorizedException('Sai số điện thoại');
     }
 
+    console.log('pass phone', user.password)
     const checkedPassword = await comparePassword(password, user.password);
     if (!checkedPassword) {
       throw new UnauthorizedException('Sai mật khẩu');
     }
+
+    console.log('pass password')
 
     const { accessToken, refreshToken } = this.generateTokens(user);
 
@@ -66,6 +71,10 @@ export class AuthService {
     return {
       accessToken: accessToken,
       refreshToken: refreshToken,
+      user: {
+        _id: user._id,
+        name: user.fullName,
+      },
       message: 'Đăng nhập thành công',
     };
   }
@@ -110,7 +119,6 @@ export class AuthService {
       restaurantId: user?.restaurantId,
     };
 
-    console.log(payload.restaurantId);
     const accessToken = this.jwtService.sign(payload, {
       expiresIn: '15m',
     });

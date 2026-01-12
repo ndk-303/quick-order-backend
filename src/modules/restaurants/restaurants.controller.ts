@@ -11,10 +11,8 @@ import {
 } from '@nestjs/common';
 import { RestaurantsService } from './restaurants.service';
 import { CreateRestaurantDto } from './dto/create-restaurant.dto';
-import { Public } from 'src/common/decorators/public.decorator';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { CloudinaryService } from 'src/common/services/cloudinary.service';
-import { CreateRestaurantTypeDto } from './dto/create-restaurant-type.dto';
 
 @Controller('restaurants')
 export class RestaurantsController {
@@ -23,7 +21,6 @@ export class RestaurantsController {
     private readonly cloudinaryService: CloudinaryService,
   ) {}
 
-  @Public()
   @Post()
   @UseInterceptors(FileInterceptor('file'))
   async create(
@@ -38,7 +35,6 @@ export class RestaurantsController {
   ) {
     if (file) {
       const imageUrl = await this.cloudinaryService.uploadRestaurantImage(file);
-      return imageUrl;
       const data = {
         ...createRestaurantDto,
         imageUrl: imageUrl,
@@ -56,14 +52,37 @@ export class RestaurantsController {
   //   return await this.restaurantsService.createAll();
   // }
 
-  @Public()
   @Get()
   async findAll() {
     return this.restaurantsService.findAll();
   }
 
-  @Post('type')
-  async createType(createTypeDto: CreateRestaurantTypeDto) {
-    return this.restaurantsService.createRestaurantType(createTypeDto);
+  @Post('types')
+  @UseInterceptors(FileInterceptor('file'))
+  async createType(
+    @Body('name') name: string,
+    @UploadedFile(
+      new ParseFilePipe({
+        validators: [new FileTypeValidator({ fileType: '.(png|jpeg|jpg)' })],
+        fileIsRequired: false,
+      }),
+    )
+    file: Express.Multer.File,
+  ) {
+    if (file) {
+      const imageUrl = await this.cloudinaryService.uploadRestaurantImage(file);
+      const data = {
+        name,
+        imageUrl,
+      };
+      return this.restaurantsService.createRestaurantType(data);
+    } else {
+      throw new BadRequestException('File ảnh không hợp lệ');
+    }
+  }
+
+  @Get('types')
+  async findAllTypes() {
+    return await this.restaurantsService.findAllTypes();
   }
 }

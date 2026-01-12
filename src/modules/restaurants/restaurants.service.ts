@@ -25,19 +25,31 @@ export class RestaurantsService {
   ) {}
 
   async create(createRestaurantDto: CreateRestaurantDto): Promise<Restaurant> {
+    const restaurantType = await this.restaurantModel.findOne({
+      slug: createRestaurantDto.type,
+    });
+
+    if (!restaurantType)
+      throw new BadRequestException('Không có loại nhà hàng này');
+
     const newRestaurant = new this.restaurantModel({
       ...createRestaurantDto,
       location: {
         type: 'Point',
         coordinates: createRestaurantDto.coordinates,
       },
+      type: restaurantType._id,
     });
 
     return newRestaurant.save();
   }
 
   async findAll(): Promise<Restaurant[]> {
-    return this.restaurantModel.find().sort({ createdAt: -1 }).exec();
+    return this.restaurantModel
+      .find()
+      .sort({ createdAt: -1 })
+      .populate('type', 'name slug')
+      .exec();
   }
 
   async findById(_id: string): Promise<Restaurant> {
@@ -98,5 +110,11 @@ export class RestaurantsService {
       slug,
       imageUrl: createTypeDto.imageUrl,
     });
+  }
+
+  async findAllTypes(): Promise<RestaurantType[]> {
+    return await this.restaurantTypeModel
+      .find()
+      .select('-createdAt -updatedAt');
   }
 }

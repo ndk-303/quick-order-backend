@@ -32,7 +32,7 @@ export class CreateRestaurantDto {
   priceRange: string;
 
   @IsString()
-  cuisine: string;
+  type: string;
 
   @IsString()
   openTime: string;
