@@ -53,13 +53,10 @@ export class AuthService {
       throw new UnauthorizedException('Sai số điện thoại');
     }
 
-    console.log('pass phone', user.password)
     const checkedPassword = await comparePassword(password, user.password);
     if (!checkedPassword) {
       throw new UnauthorizedException('Sai mật khẩu');
     }
-
-    console.log('pass password')
 
     const { accessToken, refreshToken } = this.generateTokens(user);
 
