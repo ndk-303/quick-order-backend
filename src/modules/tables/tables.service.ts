@@ -2,11 +2,11 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import * as QRCode from 'qrcode';
-import { v4 as uuidv4 } from 'uuid';
 import { Table, TableDocument } from './schemas/table.schema';
 import { UpdateTableDto } from './dto/update-table.dto';
 import { ConfigService } from '@nestjs/config';
 import { CreateTableDto } from './dto/create-table.dto';
+const { v4: uuidv4 } = require('uuid');
 
 @Injectable()
 export class TablesService {
