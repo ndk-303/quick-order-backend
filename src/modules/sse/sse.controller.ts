@@ -1,9 +1,7 @@
-import { Controller, Sse, Param, Query, Req } from '@nestjs/common';
+import { Controller, Sse, Param, Req } from '@nestjs/common';
 import { map, filter } from 'rxjs/operators';
-import { Observable } from 'rxjs';
 import { SseService } from './sse.service';
-import { matchRestaurant, matchTable } from 'src/common/filters/sse.filter';
-import { SseEventPayload } from 'src/common/interfaces/sse.interface';
+import { Public } from 'src/common/decorators/public.decorator';
 
 @Controller('sse')
 export class SseController {
@@ -14,18 +12,12 @@ export class SseController {
    * - Bếp: chỉ truyền restaurantId
    * - Khách: truyền thêm tableId
    */
+  @Public()
   @Sse('orders/:restaurantId')
-  streamOrders(
-    @Param('restaurantId') restaurantId: string,
-    @Query('tableId') tableId?: string,
-  ): Observable<MessageEvent> {
+  stream(@Param('restaurantId') restaurantId: string) {
     return this.sseService.stream$.pipe(
-      filter((event: SseEventPayload) =>
-          matchRestaurant(event, restaurantId) && matchTable(event, tableId),
-      ),
-      map((event: SseEventPayload) => ({
-        data: event,
-      })),
+      filter((e) => e.restaurantId === restaurantId),
+      map((e) => ({ data: e })),
     );
   }
 

@@ -4,7 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import {
   Order,
   OrderDocument,
@@ -67,6 +67,7 @@ export class OrdersService {
         quantity: itemDto.quantity,
         selected_options: itemDto.selected_options,
         note: itemDto.note,
+        status: OrderStatus.PENDING,
       });
     }
 
@@ -97,7 +98,7 @@ export class OrdersService {
   async updateOrderItemStatus(updateItemDto: UpdateOrderItemStatusDto) {
     const { orderId, itemId, status } = updateItemDto;
     const order = await this.orderModel.findOneAndUpdate(
-      { _id: orderId, 'items._id': itemId },
+      { _id: orderId, 'items.menu_item_id': new Types.ObjectId(itemId) },
       {
         $set: {
           'items.$.status': status,
@@ -110,15 +111,15 @@ export class OrdersService {
       throw new NotFoundException('Order or item not found');
     }
 
+    order.status = this.calculateOrderStatus(order.items);
+    await order.save();
+
     this.sseService.emit({
       type: SseEventType.ORDER_UPDATED,
       restaurantId: order.restaurant_id.toString(),
       payload: order,
-      userId: '',
     });
 
-    order.status = this.calculateOrderStatus(order.items);
-    await order.save();
     return order;
   }
 

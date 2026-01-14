@@ -8,7 +8,7 @@ export interface SseEventPayload {
   type: SseEventType;
   restaurantId?: string;
   tableId?: string;
-  userId: string;
+  userId?: string;
   payload: any;
   createdAt?: Date;
 }
