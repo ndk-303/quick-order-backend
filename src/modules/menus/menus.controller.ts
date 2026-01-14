@@ -6,20 +6,16 @@ import {
   Patch,
   Post,
   Body,
-  UseGuards,
   UseInterceptors,
   UploadedFile,
   BadRequestException,
   ParseFilePipe,
   FileTypeValidator,
   Req,
-  Query,
 } from '@nestjs/common';
 import { MenusService } from './menus.service';
 import { CreateMenuItemDto } from './dto/create-menu-item.dto';
 import { UpdateMenuItemDto } from './dto/update-menu-item.dto';
-import { GeoFencingGuard } from 'src/common/guards/geocoding.guard';
-import { TableTokenGuard } from 'src/common/guards/table-token.guard';
 import { CloudinaryService } from 'src/common/services/cloudinary.service';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Roles } from 'src/common/decorators/roles.decorator';
@@ -48,7 +44,6 @@ export class MenusController {
   ) {
     if (file) {
       const imageUrl = await this.cloudinaryService.uploadMenuImage(file);
-      console.log(req.user.restaurantId);
       return this.menusService.create(
         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         req.user.restaurantId,
@@ -78,7 +73,6 @@ export class MenusController {
     return this.menusService.remove(id);
   }
 
-  // @UseGuards(GeoFencingGuard, TableTokenGuard)
   @Public()
   @Get(':restaurantId/:tableId')
   async getMenuForGuest(
