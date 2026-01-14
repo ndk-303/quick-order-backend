@@ -51,10 +51,6 @@ export class CreateMenuItemDto {
   @IsNotEmpty()
   category: string;
 
-  @IsString()
-  @IsOptional()
-  image_url: string;
-
   @IsArray()
   @IsOptional()
   @ValidateNested({ each: true })

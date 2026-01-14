@@ -31,6 +31,10 @@ class OrderItemDto {
 export class CreateOrderDto {
   @IsMongoId()
   @IsNotEmpty()
+  user_id: string;
+
+  @IsMongoId()
+  @IsNotEmpty()
   restaurant_id: string;
 
   @IsMongoId()

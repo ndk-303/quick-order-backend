@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsString, IsMongoId, IsOptional } from 'class-validator';
+import { IsNotEmpty, IsString, IsOptional } from 'class-validator';
 
 export class CreateTableDto {
   @IsNotEmpty()
@@ -13,9 +13,4 @@ export class CreateTableDto {
   @IsString()
   @IsOptional()
   is_active: boolean;
-
-  @IsNotEmpty()
-  @IsMongoId()
-  @IsOptional()
-  restaurant: string;
 }

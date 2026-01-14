@@ -13,6 +13,7 @@ import {
   ParseFilePipe,
   FileTypeValidator,
   Req,
+  Query,
 } from '@nestjs/common';
 import { MenusService } from './menus.service';
 import { CreateMenuItemDto } from './dto/create-menu-item.dto';
@@ -23,6 +24,7 @@ import { CloudinaryService } from 'src/common/services/cloudinary.service';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Roles } from 'src/common/decorators/roles.decorator';
 import { UserRole } from 'src/common/enums/user-role.enum';
+import { Public } from 'src/common/decorators/public.decorator';
 
 @Controller('menus')
 export class MenusController {
@@ -46,8 +48,13 @@ export class MenusController {
   ) {
     if (file) {
       const imageUrl = await this.cloudinaryService.uploadMenuImage(file);
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-      return this.menusService.create(req.user.restaurantId, createMenuItemDto);
+      console.log(req.user.restaurantId);
+      return this.menusService.create(
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+        req.user.restaurantId,
+        createMenuItemDto,
+        imageUrl,
+      );
     } else {
       throw new BadRequestException('File ảnh không hợp lệ');
     }
@@ -71,7 +78,8 @@ export class MenusController {
     return this.menusService.remove(id);
   }
 
-  @UseGuards(GeoFencingGuard, TableTokenGuard)
+  // @UseGuards(GeoFencingGuard, TableTokenGuard)
+  @Public()
   @Get(':restaurantId/:tableId')
   async getMenuForGuest(
     @Param('restaurantId') restaurantId: string,

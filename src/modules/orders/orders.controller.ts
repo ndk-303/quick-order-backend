@@ -7,14 +7,21 @@ export class OrdersController {
   constructor(private readonly ordersService: OrdersService) {}
 
   @Post()
-  create(@Body() createOrderDto: CreateOrderDto) {
-    return this.ordersService.create(createOrderDto);
+  create(@Body() createOrderDto: CreateOrderDto, @Req() req: any) {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access
+    return this.ordersService.create(createOrderDto, req.user.userId);
   }
 
-  @Get()
-  findAll(@Req() req: any) {
+  @Get('restaurant')
+  findAllRestaurant(@Req() req: any) {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access
     return this.ordersService.findAll(req.user.restaurantId);
+  }
+
+  @Get('client')
+  findAllClient(@Req() req: any) {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access
+    return this.ordersService.findAllForClient(req.user.userId);
   }
 
   @Get(':id')

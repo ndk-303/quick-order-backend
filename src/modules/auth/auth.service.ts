@@ -48,7 +48,7 @@ export class AuthService {
 
     const user = await this.userModel
       .findOne({ phoneNumber })
-      .select('_id fullName password');
+      .select('_id fullName password restaurantId');
     if (!user) {
       throw new UnauthorizedException('Sai số điện thoại');
     }
@@ -110,6 +110,7 @@ export class AuthService {
   }
 
   private generateTokens(user: UserDocument) {
+    console.log(user);
     const payload = {
       sub: user._id.toString(),
       role: user.role,

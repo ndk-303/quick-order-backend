@@ -26,7 +26,7 @@ export class OrdersService {
     private ordersGateway: OrdersGateway,
   ) {}
 
-  async create(createOrderDto: CreateOrderDto) {
+  async create(createOrderDto: CreateOrderDto, userId: string) {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { restaurant_id, table_id, items } = createOrderDto;
 
@@ -64,6 +64,7 @@ export class OrdersService {
     }
 
     const newOrder = new this.orderModel({
+      user_id: userId,
       restaurant_id,
       table_id,
       items: snapshotItems,
@@ -81,7 +82,7 @@ export class OrdersService {
   }
 
   async findAll(restaurantId: string) {
-    const tables = await this.orderModel
+    const orders = await this.orderModel
       .find({ restaurant_id: restaurantId })
       .sort({ createdAt: -1 })
       .populate({
@@ -92,7 +93,23 @@ export class OrdersService {
       .select('-createdAt -updatedAt -priority_score')
       .exec();
 
-    return tables;
+    return orders;
+  }
+
+  async findAllForClient(userId: string) {
+    const orders = await this.orderModel
+      .find({ user_id: userId })
+      .sort({ createdAt: -1 })
+      .populate({
+        path: 'table_id',
+        model: Table.name,
+        select: 'name',
+      })
+      .populate('restaurant_id', 'name')
+      .select('-createdAt -updatedAt -priority_score')
+      .exec();
+
+    return orders;
   }
 
   async findOne(id: string) {

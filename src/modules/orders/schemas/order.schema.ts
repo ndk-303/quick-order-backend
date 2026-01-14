@@ -2,6 +2,7 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
 import { Restaurant } from '../../restaurants/schemas/restaurant.schema';
 import { Table } from '../../tables/schemas/table.schema';
+import { User } from 'src/modules/users/schemas/user.schema';
 
 export type OrderDocument = Order & Document;
 
@@ -34,6 +35,9 @@ class OrderItemSnapshot {
 
 @Schema({ timestamps: true })
 export class Order {
+  @Prop({ type: Types.ObjectId, ref: User.name, required: true })
+  user_id: Types.ObjectId;
+
   @Prop({ type: Types.ObjectId, ref: Restaurant.name, required: true })
   restaurant_id: Types.ObjectId;
 

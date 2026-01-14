@@ -26,7 +26,11 @@ export class MenusService {
     private restaurantModel: Model<RestaurantDocument>,
   ) {}
 
-  async create(restaurantId, createMenuItemDto: CreateMenuItemDto) {
+  async create(
+    restaurantId,
+    createMenuItemDto: CreateMenuItemDto,
+    imageUrl: string,
+  ) {
     const restaurantExists = await this.restaurantModel.findById(restaurantId);
 
     if (!restaurantExists) {
@@ -39,6 +43,7 @@ export class MenusService {
       ...createMenuItemDto,
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       restaurant: restaurantId,
+      image_url: imageUrl,
     };
 
     const newItem = new this.menuItemModel(data);
@@ -72,14 +77,18 @@ export class MenusService {
   }
 
   async getMenuForClient(restaurantId: string, tableId: string) {
+    console.log(tableId);
+    console.log(restaurantId);
+
     const table = await this.tableModel
       .findOne({
         _id: tableId,
-        restaurant_id: restaurantId,
+        restaurant: restaurantId,
       })
       .select('_id name restaurant is_active')
       .populate('restaurant', '_id name')
       .exec();
+    console.log(table);
 
     if (!table) {
       throw new BadRequestException('Mã QR không hợp lệ hoặc đã hết hạn!');
@@ -91,7 +100,7 @@ export class MenusService {
 
     const menu = await this.menuItemModel
       .find({
-        restaurant_id: restaurantId,
+        restaurant: restaurantId,
         is_available: true,
       })
       .select('-createdAt -updatedAt -restaurant')
