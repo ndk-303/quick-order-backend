@@ -5,7 +5,12 @@ import {
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { Order, OrderDocument, OrderStatus } from './schemas/order.schema';
+import {
+  Order,
+  OrderDocument,
+  OrderItemSnapshot,
+  OrderStatus,
+} from './schemas/order.schema';
 import { CreateOrderDto } from './dto/create-order.dto';
 import {
   MenuItem,
@@ -15,7 +20,9 @@ import {
   Table,
   TableDocument,
 } from '../../modules/tables/schemas/table.schema';
-import { OrdersGateway } from './orders.gateway';
+import { SseService } from '../sse/sse.service';
+import { SseEventType } from 'src/common/interfaces/sse.interface';
+import { UpdateOrderItemStatusDto } from './dto/update-item.dto';
 
 @Injectable()
 export class OrdersService {
@@ -23,7 +30,7 @@ export class OrdersService {
     @InjectModel(Order.name) private orderModel: Model<OrderDocument>,
     @InjectModel(MenuItem.name) private menuItemModel: Model<MenuItemDocument>,
     @InjectModel(Table.name) private tableModel: Model<TableDocument>,
-    private ordersGateway: OrdersGateway,
+    private readonly sseService: SseService,
   ) {}
 
   async create(createOrderDto: CreateOrderDto, userId: string) {
@@ -72,13 +79,47 @@ export class OrdersService {
       status: OrderStatus.PENDING,
     });
     const savedOrder = await newOrder.save();
-    // 4. Bắn Socket báo cho Bếp/Thu ngân
-    this.ordersGateway.notifyNewOrder(restaurant_id, savedOrder);
+
+    this.sseService.emit({
+      type: SseEventType.ORDER_CREATED,
+      restaurantId: savedOrder.restaurant_id.toString(),
+      tableId: savedOrder.table_id.toString(),
+      payload: savedOrder,
+      userId: '',
+    });
 
     return {
       message: 'Đặt hàng thành công',
       orderId: savedOrder._id,
     };
+  }
+
+  async updateOrderItemStatus(updateItemDto: UpdateOrderItemStatusDto) {
+    const { orderId, itemId, status } = updateItemDto;
+    const order = await this.orderModel.findOneAndUpdate(
+      { _id: orderId, 'items._id': itemId },
+      {
+        $set: {
+          'items.$.status': status,
+        },
+      },
+      { new: true },
+    );
+
+    if (!order) {
+      throw new NotFoundException('Order or item not found');
+    }
+
+    this.sseService.emit({
+      type: SseEventType.ORDER_UPDATED,
+      restaurantId: order.restaurant_id.toString(),
+      payload: order,
+      userId: '',
+    });
+
+    order.status = this.calculateOrderStatus(order.items);
+    await order.save();
+    return order;
   }
 
   async findAll(restaurantId: string) {
@@ -118,14 +159,21 @@ export class OrdersService {
     return order;
   }
 
-  async updateStatus(_id: string, status: string) {
-    const order = await this.orderModel.findByIdAndUpdate(_id, {
-      status: status,
-    });
-    if (!order) throw new NotFoundException('Order not found');
+  calculateOrderStatus(items: OrderItemSnapshot[]): OrderStatus {
+    if (
+      items.every(
+        (i) =>
+          i.status === OrderStatus.COMPLETED ||
+          i.status === OrderStatus.CANCELLED,
+      )
+    ) {
+      return OrderStatus.COMPLETED;
+    }
 
-    this.ordersGateway.notifyOrderStatus(order.restaurant_id.toString(), order);
+    if (items.some((i) => i.status === OrderStatus.COOKING)) {
+      return OrderStatus.COOKING;
+    }
 
-    return order;
+    return OrderStatus.PENDING;
   }
 }

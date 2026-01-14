@@ -13,7 +13,7 @@ export enum OrderStatus {
   CANCELLED = 'CANCELED',
 }
 
-class OrderItemSnapshot {
+export class OrderItemSnapshot {
   @Prop({ type: Types.ObjectId, required: true })
   menu_item_id: Types.ObjectId;
 
@@ -31,6 +31,13 @@ class OrderItemSnapshot {
 
   @Prop()
   note: string;
+
+  @Prop({
+    type: String,
+    enum: Object.values(OrderStatus),
+    default: OrderStatus.PENDING,
+  })
+  status: OrderStatus;
 }
 
 @Schema({ timestamps: true })

@@ -8,7 +8,7 @@ import { Table, TableSchema } from '../tables/schemas/table.schema';
 import { RestaurantsModule } from '../restaurants/restaurants.module';
 import { TablesModule } from '../tables/tables.module';
 import { MenusModule } from '../menus/menus.module';
-import { OrdersGateway } from './orders.gateway';
+import { SseModule } from '../sse/sse.module';
 
 @Module({
   imports: [
@@ -19,8 +19,9 @@ import { OrdersGateway } from './orders.gateway';
     RestaurantsModule,
     TablesModule,
     MenusModule,
+    SseModule,
   ],
   controllers: [OrdersController],
-  providers: [OrdersService, OrdersGateway],
+  providers: [OrdersService],
 })
 export class OrdersModule {}
