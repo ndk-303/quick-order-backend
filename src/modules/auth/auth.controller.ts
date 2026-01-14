@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Get,
   Post,
   Req,
   Res,
@@ -72,5 +73,11 @@ export class AuthController {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
     response.clearCookie('refresh_token');
     return { message: 'Logged out successfully' };
+  }
+
+  @Public()
+  @Get('health')
+  healthCheck() {
+    return 'OK';
   }
 }
