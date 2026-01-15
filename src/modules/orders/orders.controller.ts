@@ -14,7 +14,7 @@ export class OrdersController {
     return this.ordersService.create(createOrderDto, req.user.userId);
   }
 
-  @Get('restaurant')
+  @Get()
   findAllRestaurant(@Req() req: any) {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access
     return this.ordersService.findAll(req.user.restaurantId);
