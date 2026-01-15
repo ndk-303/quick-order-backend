@@ -18,8 +18,6 @@ import { CreateMenuItemDto } from './dto/create-menu-item.dto';
 import { UpdateMenuItemDto } from './dto/update-menu-item.dto';
 import { CloudinaryService } from 'src/common/services/cloudinary.service';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { Roles } from 'src/common/decorators/roles.decorator';
-import { UserRole } from 'src/common/enums/user-role.enum';
 import { Public } from 'src/common/decorators/public.decorator';
 
 @Controller('menus')
@@ -84,7 +82,6 @@ export class MenusController {
   }
 
   @Get()
-  @Roles(UserRole.MANAGER)
   async getMenuForAdmin(@Req() req: any) {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access
     return this.menusService.getMenuForAdmin(req.user.restaurantId);
