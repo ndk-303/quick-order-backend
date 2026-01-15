@@ -30,7 +30,7 @@ export class TablesService {
     });
 
     // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
-    const qrUrl = `/menus/${table.restaurant}/${table._id}?token=${table.token}`;
+    const qrUrl = `https://disquieting-unfussily-maryetta.ngrok-free.dev/menus/${table.restaurant}/${table._id}?token=${table.token}`;
     const qrImage = await QRCode.toDataURL(qrUrl);
     await this.tableModel.findByIdAndUpdate(table._id, { qrImage: qrImage });
     return {
