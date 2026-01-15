@@ -46,12 +46,6 @@ export class RestaurantsController {
     }
   }
 
-  // @Public()
-  // @Post('/create')
-  // async cr() {
-  //   return await this.restaurantsService.createAll();
-  // }
-
   @Get()
   async findAll() {
     return this.restaurantsService.findAll();

@@ -71,7 +71,7 @@ export class OrdersService {
       });
     }
 
-    const newOrder = new this.orderModel({
+    const newOrder = await this.orderModel.create({
       user_id: userId,
       restaurant_id,
       table_id,
@@ -79,44 +79,63 @@ export class OrdersService {
       total_amount: totalAmount,
       status: OrderStatus.PENDING,
     });
-    const savedOrder = await newOrder.save();
+
+    const order = await this.orderModel
+      .findById(newOrder._id)
+      .sort({ createdAt: -1 })
+      .populate({
+        path: 'table_id',
+        model: Table.name,
+        select: 'name',
+      })
+      .select('-createdAt -updatedAt -priority_score')
+      .exec();
 
     this.sseService.emit({
       type: SseEventType.ORDER_CREATED,
-      restaurantId: savedOrder.restaurant_id.toString(),
-      tableId: savedOrder.table_id.toString(),
-      payload: savedOrder,
-      userId: '',
+      restaurantId: order?.restaurant_id.toString(),
+      tableId: order?.table_id.toString(),
+      payload: order,
+      userId: order?.user_id.toString(),
     });
 
     return {
       message: 'Đặt hàng thành công',
-      orderId: savedOrder._id,
+      orderId: order?._id,
     };
   }
 
   async updateOrderItemStatus(updateItemDto: UpdateOrderItemStatusDto) {
     const { orderId, itemId, status } = updateItemDto;
-    const order = await this.orderModel.findOneAndUpdate(
-      { _id: orderId, 'items.menu_item_id': new Types.ObjectId(itemId) },
+
+    const updated = await this.orderModel.findOneAndUpdate(
       {
-        $set: {
-          'items.$.status': status,
-        },
+        _id: orderId,
+        'items.menu_item_id': new Types.ObjectId(itemId),
+      },
+      {
+        $set: { 'items.$.status': status },
       },
       { new: true },
     );
 
-    if (!order) {
+    if (!updated) {
       throw new NotFoundException('Order or item not found');
     }
 
-    order.status = this.calculateOrderStatus(order.items);
-    await order.save();
+    updated.status = this.calculateOrderStatus(updated.items);
+    await updated.save();
+
+    const order = await this.orderModel
+      .findById(updated._id)
+      .populate('table_id', 'name')
+      .populate('restaurant_id', 'name')
+      .exec();
 
     this.sseService.emit({
       type: SseEventType.ORDER_UPDATED,
-      restaurantId: order.restaurant_id.toString(),
+      restaurantId: order?.restaurant_id._id.toString(),
+      userId: order?.user_id.toString(),
       payload: order,
     });
 
@@ -125,7 +144,12 @@ export class OrdersService {
 
   async findAll(restaurantId: string) {
     const orders = await this.orderModel
-      .find({ restaurant_id: restaurantId })
+      .find({
+        restaurant_id: restaurantId,
+        status: {
+          $nin: ['COMPLETED', 'CANCELED'],
+        },
+      })
       .sort({ createdAt: -1 })
       .populate({
         path: 'table_id',
@@ -161,14 +185,11 @@ export class OrdersService {
   }
 
   calculateOrderStatus(items: OrderItemSnapshot[]): OrderStatus {
-    if (
-      items.every(
-        (i) =>
-          i.status === OrderStatus.COMPLETED ||
-          i.status === OrderStatus.CANCELLED,
-      )
-    ) {
+    if (items.some((i) => i.status === OrderStatus.COMPLETED)) {
       return OrderStatus.COMPLETED;
+    }
+    if (items.every((i) => i.status === OrderStatus.CANCELLED)) {
+      return OrderStatus.CANCELLED;
     }
 
     if (items.some((i) => i.status === OrderStatus.COOKING)) {
