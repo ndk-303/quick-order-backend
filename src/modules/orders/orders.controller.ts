@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Get, Param, Patch, Req } from '@nestjs/common';
+import { Controller, Post, Body, Get, Param, Patch, Req, Query } from '@nestjs/common';
 import { OrdersService } from './orders.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderItemStatusDto } from './dto/update-item.dto';
@@ -6,7 +6,7 @@ import { Public } from 'src/common/decorators/public.decorator';
 
 @Controller('orders')
 export class OrdersController {
-  constructor(private readonly ordersService: OrdersService) {}
+  constructor(private readonly ordersService: OrdersService) { }
 
   @Post()
   create(@Body() createOrderDto: CreateOrderDto, @Req() req: any) {
@@ -27,9 +27,9 @@ export class OrdersController {
   }
 
   @Get('client')
-  findAllClient(@Req() req: any) {
+  findAllClient(@Req() req: any, @Query() status: string[]) {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access
-    return this.ordersService.findAllForClient(req.user.userId);
+    return this.ordersService.findAllForClient(req.user.userId, status);
   }
 
   @Get(':id')

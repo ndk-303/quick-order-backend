@@ -31,7 +31,7 @@ export class OrdersService {
     @InjectModel(MenuItem.name) private menuItemModel: Model<MenuItemDocument>,
     @InjectModel(Table.name) private tableModel: Model<TableDocument>,
     private readonly sseService: SseService,
-  ) {}
+  ) { }
 
   async create(createOrderDto: CreateOrderDto, userId: string) {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -162,9 +162,9 @@ export class OrdersService {
     return orders;
   }
 
-  async findAllForClient(userId: string) {
+  async findAllForClient(userId: string, status: string[]) {
     const orders = await this.orderModel
-      .find({ user_id: userId })
+      .find({ user_id: userId, status: { $in: status } })
       .sort({ createdAt: -1 })
       .populate({
         path: 'table_id',
