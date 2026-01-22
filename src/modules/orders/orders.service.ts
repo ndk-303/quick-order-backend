@@ -145,7 +145,7 @@ export class OrdersService {
   async findAll(restaurantId: string) {
     const orders = await this.orderModel
       .find({
-        restaurant_id: restaurantId,
+        restaurant_id: new Types.ObjectId(restaurantId),
         status: {
           $nin: ['COMPLETED', 'CANCELED'],
         },
@@ -163,8 +163,9 @@ export class OrdersService {
   }
 
   async findAllForClient(userId: string, status: string[]) {
+    console.log(userId, status);
     const orders = await this.orderModel
-      .find({ user_id: userId, status: { $in: status } })
+      .find({ user_id: new Types.ObjectId(userId), status: { $in: status } })
       .sort({ createdAt: -1 })
       .populate({
         path: 'table_id',
