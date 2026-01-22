@@ -27,7 +27,7 @@ export class OrdersController {
   }
 
   @Get('client')
-  findAllClient(@Req() req: any, @Query() status: string[]) {
+  findAllClient(@Req() req: any, @Query('status') status: string[]) {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access
     return this.ordersService.findAllForClient(req.user.userId, status);
   }

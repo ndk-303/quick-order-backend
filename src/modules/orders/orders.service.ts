@@ -174,7 +174,8 @@ export class OrdersService {
       .populate('restaurant_id', 'name')
       .select('-createdAt -updatedAt -priority_score')
       .exec();
-
+    console.log(orders);
+    console.log(status);
     return orders;
   }
 
