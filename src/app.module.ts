@@ -13,6 +13,8 @@ import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { AuthModule } from './modules/auth/auth.module';
 import { RolesGuard } from './common/guards/role.guard';
 import { SseModule } from './modules/sse/sse.module';
+import { InvoicesModule } from './modules/invoices/invoices.module';
+import { PaymentsModule } from './modules/payments/payments.module';
 
 @Module({
   imports: [
@@ -25,6 +27,8 @@ import { SseModule } from './modules/sse/sse.module';
     UsersModule,
     AuthModule,
     SseModule,
+    InvoicesModule,
+    PaymentsModule,
   ],
   providers: [
     {

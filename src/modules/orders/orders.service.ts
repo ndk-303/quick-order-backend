@@ -179,6 +179,36 @@ export class OrdersService {
     return orders;
   }
 
+  async createFromInvoice(invoice: any) {
+    const orderItems = invoice.items.map(item => ({
+      menu_item_id: item.menu_item_id,
+      name: item.name,
+      price: item.price,
+      quantity: item.quantity,
+      note: item.note,
+      status: OrderStatus.PENDING
+    }));
+
+    const newOrder = new this.orderModel({
+      user_id: invoice.user_id,
+      restaurant_id: invoice.restaurant_id,
+      table_id: invoice.table_id,
+      items: orderItems,
+      total_amount: invoice.total_amount,
+      status: OrderStatus.PENDING,
+    });
+
+    const savedOrder = await newOrder.save();
+
+    // Notify via SSE
+    //  this.sseService.sendToRestaurant(savedOrder.restaurant_id.toString(), {
+    //     type: 'NEW_ORDER',
+    //     payload: savedOrder,
+    //  });
+
+    return savedOrder;
+  }
+
   async findOne(id: string) {
     const order = await this.orderModel.findById(id).exec();
     if (!order) throw new NotFoundException('Order not found');

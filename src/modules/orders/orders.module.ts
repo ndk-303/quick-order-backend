@@ -23,5 +23,6 @@ import { SseModule } from '../sse/sse.module';
   ],
   controllers: [OrdersController],
   providers: [OrdersService],
+  exports: [OrdersService],
 })
-export class OrdersModule {}
+export class OrdersModule { }
