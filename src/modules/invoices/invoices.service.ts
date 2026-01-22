@@ -12,7 +12,7 @@ export class InvoicesService {
         @InjectModel(MenuItem.name) private menuItemModel: Model<MenuItemDocument>,
     ) { }
 
-    async create(createInvoiceDto: CreateInvoiceDto): Promise<InvoiceDocument> {
+    async create(createInvoiceDto: CreateInvoiceDto) {
         const { items, ...rest } = createInvoiceDto;
         let total_amount = 0;
         const invoiceItems: InvoiceItemSnapshot[] = [];
@@ -38,7 +38,7 @@ export class InvoicesService {
             });
         }
 
-        const newInvoice = new this.invoiceModel({
+        const newInvoice = this.invoiceModel.create({
             ...rest,
             user_id: new Types.ObjectId(createInvoiceDto.user_id),
             restaurant_id: new Types.ObjectId(createInvoiceDto.restaurant_id),
@@ -48,7 +48,7 @@ export class InvoicesService {
             status: InvoiceStatus.PENDING,
         });
 
-        return newInvoice.save();
+        return newInvoice;
     }
 
     async findOne(id: string): Promise<InvoiceDocument> {

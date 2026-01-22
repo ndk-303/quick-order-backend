@@ -175,7 +175,6 @@ export class OrdersService {
       .select('-createdAt -updatedAt -priority_score')
       .exec();
     console.log(orders);
-    console.log(status);
     return orders;
   }
 

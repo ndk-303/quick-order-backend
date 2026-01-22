@@ -14,6 +14,6 @@ import { MenuItem, MenuItemSchema } from '../menus/schemas/menu-item.schema';
     ],
     controllers: [InvoicesController],
     providers: [InvoicesService],
-    exports: [InvoicesService], // Export so PaymentsModule/OrdersModule can use it
+    exports: [InvoicesService],
 })
 export class InvoicesModule { }
