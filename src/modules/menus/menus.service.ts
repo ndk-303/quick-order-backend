@@ -100,7 +100,7 @@ export class MenusService {
 
     const menu = await this.menuItemModel
       .find({
-        restaurant: restaurantId,
+        restaurant: new Types.ObjectId(restaurantId),
         is_available: true,
       })
       .select('-createdAt -updatedAt -restaurant')
