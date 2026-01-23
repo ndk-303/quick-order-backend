@@ -4,7 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { MenuItem, MenuItemDocument } from './schemas/menu-item.schema';
 import {
   Table,
@@ -24,7 +24,7 @@ export class MenusService {
     @InjectModel(Table.name) private tableModel: Model<TableDocument>,
     @InjectModel(Restaurant.name)
     private restaurantModel: Model<RestaurantDocument>,
-  ) {}
+  ) { }
 
   async create(
     restaurantId,
@@ -116,7 +116,7 @@ export class MenusService {
   async getMenuForAdmin(restaurantId: string) {
     const items = await this.menuItemModel
       .find({
-        restaurant: restaurantId,
+        restaurant: new Types.ObjectId(restaurantId),
       })
       .select('-createdAt -updatedAt -restaurant')
       .exec();

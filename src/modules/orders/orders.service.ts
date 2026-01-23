@@ -200,12 +200,6 @@ export class OrdersService {
 
     const savedOrder = await newOrder.save();
 
-    // Notify via SSE
-    //  this.sseService.sendToRestaurant(savedOrder.restaurant_id.toString(), {
-    //     type: 'NEW_ORDER',
-    //     payload: savedOrder,
-    //  });
-
     return savedOrder;
   }
 

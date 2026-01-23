@@ -9,7 +9,7 @@ export class User {
   @Prop({ required: true, unique: true })
   phoneNumber: string;
 
-  @Prop({ required: true })
+  @Prop({ required: false }) // Changed to false for OAuth users
   password: string;
 
   @Prop({ required: true })

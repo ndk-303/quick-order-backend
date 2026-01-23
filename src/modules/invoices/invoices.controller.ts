@@ -18,6 +18,12 @@ export class InvoicesController {
         return invoice;
     }
 
+    @Get()
+    async findUserInvoices(@Req() req: any) {
+        const userId = req.user.userId;
+        return this.invoicesService.findByUser(userId);
+    }
+
     @Get(':id')
     async findOne(@Param('id') id: string) {
         const invoice = await this.invoicesService.findOne(id);

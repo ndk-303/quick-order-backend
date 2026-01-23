@@ -74,4 +74,14 @@ export class InvoicesService {
         }
         return invoice;
     }
+
+    async findByUser(userId: string) {
+        const invoices = await this.invoiceModel
+            .find({ user_id: new Types.ObjectId(userId), status: InvoiceStatus.PAID })
+            .populate('restaurant_id', 'name address')
+            .sort({ createdAt: -1 }) // Newest first
+            .exec();
+        console.log(invoices);
+        return invoices;
+    }
 }
