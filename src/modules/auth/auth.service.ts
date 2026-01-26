@@ -35,6 +35,7 @@ export class AuthService {
       password: hashedPassword,
       fullName,
       address: address ?? '',
+      authProviders: ['phone'],
     });
 
     return {
@@ -48,14 +49,19 @@ export class AuthService {
 
     const user = await this.userModel
       .findOne({ phoneNumber })
-      .select('_id fullName password restaurantId');
+      .select('_id fullName email phoneNumber password role restaurantId authProviders');
+
     if (!user) {
-      throw new UnauthorizedException('Sai số điện thoại');
+      throw new UnauthorizedException('Số điện thoại hoặc mật khẩu không đúng');
+    }
+
+    if (!user.password) {
+      throw new UnauthorizedException('Tài khoản này sử dụng phương thức đăng nhập khác');
     }
 
     const checkedPassword = await comparePassword(password, user.password);
     if (!checkedPassword) {
-      throw new UnauthorizedException('Sai mật khẩu');
+      throw new UnauthorizedException('Số điện thoại hoặc mật khẩu không đúng');
     }
 
     const { accessToken, refreshToken } = this.generateTokens(user);
@@ -70,7 +76,10 @@ export class AuthService {
       refreshToken: refreshToken,
       user: {
         _id: user._id,
-        name: user.fullName,
+        fullName: user.fullName,
+        email: user.email,
+        phoneNumber: user.phoneNumber,
+        authProviders: user.authProviders,
       },
       message: 'Đăng nhập thành công',
     };
@@ -90,7 +99,7 @@ export class AuthService {
 
       const user = await this.userModel
         .findById(payload.sub)
-        .select('+refreshToken');
+        .select('+refreshToken fullName email phoneNumber authProviders');
 
       if (!user || user.refreshToken !== refreshToken) {
         throw new UnauthorizedException('Refresh token không hợp lệ');
@@ -103,7 +112,17 @@ export class AuthService {
         { refreshToken: tokens.refreshToken },
       );
 
-      return tokens;
+      return {
+        accessToken: tokens.accessToken,
+        refreshToken: tokens.refreshToken,
+        user: {
+          _id: user._id,
+          fullName: user.fullName,
+          email: user.email,
+          phoneNumber: user.phoneNumber,
+          authProviders: user.authProviders,
+        },
+      };
     } catch {
       throw new UnauthorizedException('Refresh token hết hạn');
     }
@@ -205,23 +224,39 @@ export class AuthService {
     return { message: 'Đặt lại mật khẩu thành công' };
   }
 
-  // ===== GOOGLE OAUTH =====
   async googleLogin(googleUser: any) {
     try {
       console.log('Google login attempt for:', googleUser.email);
 
-      // Use email as phoneNumber for OAuth users
-      let user = await this.userModel.findOne({ phoneNumber: googleUser.email });
+      // Find user by googleId or email
+      let user = await this.userModel.findOne({
+        $or: [
+          { googleId: googleUser.id },
+          { email: googleUser.email },
+        ],
+      });
 
       if (!user) {
         console.log('Creating new user from Google profile');
         // Create new user from Google profile
         user = await this.userModel.create({
-          phoneNumber: googleUser.email,
+          googleId: googleUser.id,
+          email: googleUser.email,
           fullName: `${googleUser.firstName} ${googleUser.lastName}`.trim() || googleUser.email,
-          password: '', // No password for OAuth users
+          authProviders: ['google'],
           address: '',
         });
+      } else if (!user.googleId) {
+        // Link Google account to existing user
+        console.log('Linking Google account to existing user');
+        user.googleId = googleUser.id;
+        if (!user.email) {
+          user.email = googleUser.email;
+        }
+        if (!user.authProviders.includes('google')) {
+          user.authProviders.push('google');
+        }
+        await user.save();
       }
 
       // Generate tokens
@@ -238,8 +273,10 @@ export class AuthService {
         refreshToken: tokens.refreshToken,
         user: {
           _id: user._id,
-          name: user.fullName,
+          fullName: user.fullName,
+          email: user.email,
           phoneNumber: user.phoneNumber,
+          authProviders: user.authProviders,
         },
       };
     } catch (error) {

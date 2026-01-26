@@ -6,17 +6,32 @@ export type UserDocument = User & Document;
 
 @Schema({ timestamps: true })
 export class User {
-  @Prop({ required: true, unique: true })
-  phoneNumber: string;
+  // Authentication Identifiers
+  @Prop({ required: false, unique: true, sparse: true })
+  email?: string;
 
-  @Prop({ required: false }) // Changed to false for OAuth users
-  password: string;
+  @Prop({ required: false, unique: true, sparse: true })
+  phoneNumber?: string;
+
+  @Prop({ required: false, select: false })
+  password?: string;
+
+  // OAuth Provider IDs
+  @Prop({ unique: true, sparse: true })
+  googleId?: string;
+
+  @Prop({ unique: true, sparse: true })
+  facebookId?: string;
+
+  // Meta Information
+  @Prop({ type: [String], default: [] })
+  authProviders: string[]; // ['phone', 'google', 'facebook']
 
   @Prop({ required: true })
   fullName: string;
 
   @Prop({ required: false })
-  address: string;
+  address?: string;
 
   @Prop({ required: true, enum: UserRole, default: UserRole.CLIENT })
   role: UserRole;

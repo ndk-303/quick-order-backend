@@ -13,10 +13,14 @@ import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { Public } from '../../common/decorators/public.decorator';
 import { AuthGuard } from '@nestjs/passport';
+import { ConfigService } from '@nestjs/config';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) { }
+  constructor(
+    private readonly authService: AuthService,
+    private readonly configService: ConfigService,
+  ) { }
 
   @Public()
   @Post('register')
@@ -52,7 +56,7 @@ export class AuthController {
   ) {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
     const refreshToken = request.cookies['refresh_token'];
-
+    console.log(refreshToken);
     if (!refreshToken) {
       throw new UnauthorizedException('Refresh token not found');
     }
@@ -67,7 +71,7 @@ export class AuthController {
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
-    return { accessToken: newTokens.accessToken };
+    return { accessToken: newTokens.accessToken, user: newTokens.user };
   }
 
   @Post('logout')
@@ -126,17 +130,19 @@ export class AuthController {
   async googleAuthCallback(@Req() req: any, @Res() res: any) {
     const result = await this.authService.googleLogin(req.user);
 
-    // Set refresh token in httpOnly cookie (same as regular login)
+    const isProduction = process.env.NODE_ENV === 'production';
+    const frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'http://localhost:5173';
+    const isCrossDomain = frontendUrl.includes('ngrok');
+
     // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
     res.cookie('refresh_token', result.refreshToken, {
       httpOnly: true,
-      secure: false, // Set to true in production with HTTPS
-      sameSite: 'lax', // 'lax' for localhost, 'none' for cross-domain in production
+      secure: isCrossDomain || isProduction, // true for ngrok/production
+      sameSite: isCrossDomain ? 'none' : 'lax', // 'none' for cross-domain
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
 
     // Redirect to frontend with ONLY access token (refresh token in cookie)
-    const frontendUrl = `http://localhost:5173/auth/callback?token=${result.accessToken}`;
-    res.redirect(frontendUrl);
+    res.redirect(`${frontendUrl}/auth/callback?token=${result.accessToken}`);
   }
 }

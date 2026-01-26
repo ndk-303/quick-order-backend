@@ -8,6 +8,9 @@ import {
   ParseFilePipe,
   FileTypeValidator,
   BadRequestException,
+  Delete,
+  Param,
+  Req,
 } from '@nestjs/common';
 import { RestaurantsService } from './restaurants.service';
 import { CreateRestaurantDto } from './dto/create-restaurant.dto';
@@ -19,7 +22,7 @@ export class RestaurantsController {
   constructor(
     private readonly restaurantsService: RestaurantsService,
     private readonly cloudinaryService: CloudinaryService,
-  ) {}
+  ) { }
 
   @Post()
   @UseInterceptors(FileInterceptor('file'))
@@ -78,5 +81,25 @@ export class RestaurantsController {
   @Get('types')
   async findAllTypes() {
     return await this.restaurantsService.findAllTypes();
+  }
+
+  // Favorite Restaurants Endpoints
+  @Post('favorites/:restaurantId')
+  async addFavorite(@Param('restaurantId') restaurantId: string, @Req() req: any) {
+    const userId = req.user.userId;
+    return this.restaurantsService.addFavorite(userId, restaurantId);
+  }
+
+  @Delete('favorites/:restaurantId')
+  async removeFavorite(@Param('restaurantId') restaurantId: string, @Req() req: any) {
+    const userId = req.user.userId;
+    await this.restaurantsService.removeFavorite(userId, restaurantId);
+    return { message: 'Đã xóa khỏi danh sách yêu thích' };
+  }
+
+  @Get('favorites')
+  async getFavorites(@Req() req: any) {
+    const userId = req.user.userId;
+    return this.restaurantsService.getFavorites(userId);
   }
 }

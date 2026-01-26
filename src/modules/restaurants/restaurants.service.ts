@@ -12,6 +12,10 @@ import {
   RestaurantType,
   RestaurantTypeDocument,
 } from './schemas/restaurant-types.schema';
+import {
+  FavoriteRestaurant,
+  FavoriteRestaurantDocument,
+} from './schemas/favorite-restaurant.schema';
 import { CreateRestaurantTypeDto } from './dto/create-restaurant-type.dto';
 import slugify from 'slugify';
 
@@ -22,7 +26,9 @@ export class RestaurantsService {
     private restaurantModel: Model<RestaurantDocument>,
     @InjectModel(RestaurantType.name)
     private restaurantTypeModel: Model<RestaurantTypeDocument>,
-  ) {}
+    @InjectModel(FavoriteRestaurant.name)
+    private favoriteRestaurantModel: Model<FavoriteRestaurantDocument>,
+  ) { }
 
   async create(createRestaurantDto: CreateRestaurantDto): Promise<Restaurant> {
     const restaurantType = await this.restaurantModel.findOne({
@@ -116,5 +122,76 @@ export class RestaurantsService {
     return await this.restaurantTypeModel
       .find()
       .select('-createdAt -updatedAt');
+  }
+
+  // Favorite Restaurants Methods
+  async addFavorite(
+    userId: string,
+    restaurantId: string,
+  ): Promise<FavoriteRestaurant> {
+    if (!Types.ObjectId.isValid(restaurantId)) {
+      throw new BadRequestException('Restaurant ID không hợp lệ');
+    }
+
+    // Check if restaurant exists
+    const restaurant = await this.restaurantModel.findById(restaurantId);
+    if (!restaurant) {
+      throw new NotFoundException('Nhà hàng không tồn tại');
+    }
+
+    // Check if already favorited
+    const existing = await this.favoriteRestaurantModel.findOne({
+      userId: new Types.ObjectId(userId),
+      restaurantId: new Types.ObjectId(restaurantId),
+    });
+
+    if (existing) {
+      throw new BadRequestException('Nhà hàng đã có trong danh sách yêu thích');
+    }
+
+    const favorite = new this.favoriteRestaurantModel({
+      userId: new Types.ObjectId(userId),
+      restaurantId: new Types.ObjectId(restaurantId),
+    });
+
+    return favorite.save();
+  }
+
+  async removeFavorite(userId: string, restaurantId: string): Promise<void> {
+    if (!Types.ObjectId.isValid(restaurantId)) {
+      throw new BadRequestException('Restaurant ID không hợp lệ');
+    }
+
+    const result = await this.favoriteRestaurantModel.deleteOne({
+      userId: new Types.ObjectId(userId),
+      restaurantId: new Types.ObjectId(restaurantId),
+    });
+
+    if (result.deletedCount === 0) {
+      throw new NotFoundException('Nhà hàng không có trong danh sách yêu thích');
+    }
+  }
+
+  async getFavorites(userId: string) {
+    const temp = await this.favoriteRestaurantModel
+      .find({ userId: new Types.ObjectId(userId) })
+      .populate('restaurantId')
+      .sort({ createdAt: -1 })
+      .select('restaurantId')
+      .exec();
+    return temp.map((r) => r.restaurantId);
+  }
+
+  async isFavorite(userId: string, restaurantId: string): Promise<boolean> {
+    if (!Types.ObjectId.isValid(restaurantId)) {
+      return false;
+    }
+
+    const favorite = await this.favoriteRestaurantModel.findOne({
+      userId: new Types.ObjectId(userId),
+      restaurantId: new Types.ObjectId(restaurantId),
+    });
+
+    return !!favorite;
   }
 }

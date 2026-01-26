@@ -8,18 +8,28 @@ import {
   RestaurantType,
   RestaurantTypeSchema,
 } from './schemas/restaurant-types.schema';
+import {
+  FavoriteRestaurant,
+  FavoriteRestaurantSchema,
+} from './schemas/favorite-restaurant.schema';
+import {
+  RestaurantReview,
+  RestaurantReviewSchema,
+} from './schemas/restaurant-review.schema';
+import { ReviewsService } from './reviews.service';
+import { ReviewsController } from './reviews.controller';
 
 @Module({
   imports: [
     MongooseModule.forFeature([
       { name: Restaurant.name, schema: RestaurantSchema },
-    ]),
-    MongooseModule.forFeature([
       { name: RestaurantType.name, schema: RestaurantTypeSchema },
+      { name: FavoriteRestaurant.name, schema: FavoriteRestaurantSchema },
+      { name: RestaurantReview.name, schema: RestaurantReviewSchema },
     ]),
   ],
-  controllers: [RestaurantsController],
-  providers: [RestaurantsService, CloudinaryService],
-  exports: [RestaurantsService],
+  controllers: [RestaurantsController, ReviewsController],
+  providers: [RestaurantsService, ReviewsService, CloudinaryService],
+  exports: [RestaurantsService, ReviewsService],
 })
-export class RestaurantsModule {}
+export class RestaurantsModule { }
