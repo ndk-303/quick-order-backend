@@ -35,24 +35,24 @@ export class OrdersService {
 
   async create(createOrderDto: CreateOrderDto, userId: string) {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { restaurant_id, table_id, items } = createOrderDto;
+    const { restaurantId, tableId, items } = createOrderDto;
 
     const table = await this.tableModel.findOne({
-      _id: table_id,
+      _id: tableId,
     });
-    if (!table || !table.is_active)
+    if (!table || !table.isActive)
       throw new BadRequestException('Bàn không hợp lệ hoặc Token sai!');
 
     let totalAmount = 0;
     const snapshotItems: any[] = [];
 
     for (const itemDto of items) {
-      const dbItem = await this.menuItemModel.findById(itemDto.menu_item_id);
+      const dbItem = await this.menuItemModel.findById(itemDto.menuItemId);
       if (!dbItem) continue;
 
       let itemTotalPrice = dbItem.price;
-      if (itemDto.selected_options) {
-        itemTotalPrice += itemDto.selected_options.reduce(
+      if (itemDto.selectedOptions) {
+        itemTotalPrice += itemDto.selectedOptions.reduce(
           (sum, opt) => sum + opt.price,
           0,
         );
@@ -61,22 +61,22 @@ export class OrdersService {
       totalAmount += lineTotal;
 
       snapshotItems.push({
-        menu_item_id: dbItem._id,
+        menuItemId: dbItem._id,
         name: dbItem.name,
         price: dbItem.price,
         quantity: itemDto.quantity,
-        selected_options: itemDto.selected_options,
+        selectedOptions: itemDto.selectedOptions,
         note: itemDto.note,
         status: OrderStatus.PENDING,
       });
     }
 
     const newOrder = await this.orderModel.create({
-      user_id: userId,
-      restaurant_id,
-      table_id,
+      userId: userId,
+      restaurantId,
+      tableId,
       items: snapshotItems,
-      total_amount: totalAmount,
+      totalAmount: totalAmount,
       status: OrderStatus.PENDING,
     });
 
@@ -84,19 +84,19 @@ export class OrdersService {
       .findById(newOrder._id)
       .sort({ createdAt: -1 })
       .populate({
-        path: 'table_id',
+        path: 'tableId',
         model: Table.name,
         select: 'name',
       })
-      .select('-createdAt -updatedAt -priority_score')
+      .select('-createdAt -updatedAt -priorityScore')
       .exec();
 
     this.sseService.emit({
       type: SseEventType.ORDER_CREATED,
-      restaurantId: order?.restaurant_id.toString(),
-      tableId: order?.table_id.toString(),
+      restaurantId: order?.restaurantId.toString(),
+      tableId: order?.tableId.toString(),
       payload: order,
-      userId: order?.user_id.toString(),
+      userId: order?.userId.toString(),
     });
 
     return {
@@ -111,7 +111,7 @@ export class OrdersService {
     const updated = await this.orderModel.findOneAndUpdate(
       {
         _id: orderId,
-        'items.menu_item_id': new Types.ObjectId(itemId),
+        'items.menuItemId': new Types.ObjectId(itemId),
       },
       {
         $set: { 'items.$.status': status },
@@ -128,14 +128,14 @@ export class OrdersService {
 
     const order = await this.orderModel
       .findById(updated._id)
-      .populate('table_id', 'name')
-      .populate('restaurant_id', 'name')
+      .populate('tableId', 'name')
+      .populate('restaurantId', 'name')
       .exec();
 
     this.sseService.emit({
       type: SseEventType.ORDER_UPDATED,
-      restaurantId: order?.restaurant_id._id.toString(),
-      userId: order?.user_id.toString(),
+      restaurantId: order?.restaurantId._id.toString(),
+      userId: order?.userId.toString(),
       payload: order,
     });
 
@@ -145,18 +145,18 @@ export class OrdersService {
   async findAll(restaurantId: string) {
     const orders = await this.orderModel
       .find({
-        restaurant_id: new Types.ObjectId(restaurantId),
+        restaurantId: new Types.ObjectId(restaurantId),
         status: {
           $nin: ['COMPLETED', 'CANCELED'],
         },
       })
       .sort({ createdAt: -1 })
       .populate({
-        path: 'table_id',
+        path: 'tableId',
         model: Table.name,
         select: 'name',
       })
-      .select('-createdAt -updatedAt -priority_score')
+      .select('-createdAt -updatedAt -priorityScore')
       .exec();
 
     return orders;
@@ -165,15 +165,15 @@ export class OrdersService {
   async findAllForClient(userId: string, status: string[]) {
     console.log(userId, status);
     const orders = await this.orderModel
-      .find({ user_id: new Types.ObjectId(userId), status: { $in: status } })
+      .find({ userId: new Types.ObjectId(userId), status: { $in: status } })
       .sort({ createdAt: -1 })
       .populate({
-        path: 'table_id',
+        path: 'tableId',
         model: Table.name,
         select: 'name',
       })
-      .populate('restaurant_id', 'name')
-      .select('-createdAt -updatedAt -priority_score')
+      .populate('restaurantId', 'name')
+      .select('-createdAt -updatedAt -priorityScore')
       .exec();
     console.log(orders);
     return orders;
@@ -181,7 +181,7 @@ export class OrdersService {
 
   async createFromInvoice(invoice: any) {
     const orderItems = invoice.items.map(item => ({
-      menu_item_id: item.menu_item_id,
+      menuItemId: item.menuItemId,
       name: item.name,
       price: item.price,
       quantity: item.quantity,
@@ -190,11 +190,11 @@ export class OrdersService {
     }));
 
     const newOrder = new this.orderModel({
-      user_id: invoice.user_id,
-      restaurant_id: invoice.restaurant_id,
-      table_id: invoice.table_id,
+      userId: invoice.userId,
+      restaurantId: invoice.restaurantId,
+      tableId: invoice.tableId,
       items: orderItems,
-      total_amount: invoice.total_amount,
+      totalAmount: invoice.totalAmount,
       status: OrderStatus.PENDING,
     });
 
@@ -224,3 +224,4 @@ export class OrdersService {
     return OrderStatus.PENDING;
   }
 }
+

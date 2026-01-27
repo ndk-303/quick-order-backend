@@ -14,7 +14,7 @@ class MenuItemConfig {
   @Prop()
   name: string;
   @Prop()
-  is_required: boolean;
+  isRequired: boolean;
   @Prop({ type: [MenuItemOption] })
   options: MenuItemOption[];
 }
@@ -31,7 +31,7 @@ export class MenuItem {
   price: number;
 
   @Prop()
-  image_url: string;
+  imageUrl: string;
 
   @Prop({
     type: mongoose.Schema.Types.ObjectId,
@@ -41,7 +41,7 @@ export class MenuItem {
   restaurant: mongoose.Types.ObjectId;
 
   @Prop({ default: true })
-  is_available: boolean;
+  isAvailable: boolean;
 
   @Prop({ type: [MenuItemConfig], default: [] })
   options: MenuItemConfig[];
@@ -51,3 +51,4 @@ export class MenuItem {
 }
 
 export const MenuItemSchema = SchemaFactory.createForClass(MenuItem);
+

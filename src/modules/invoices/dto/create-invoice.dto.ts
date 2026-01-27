@@ -13,7 +13,7 @@ import { Type } from 'class-transformer';
 class InvoiceItemDto {
     @IsMongoId()
     @IsNotEmpty()
-    menu_item_id: string;
+    menuItemId: string;
 
     @IsNumber()
     @IsNotEmpty()
@@ -27,15 +27,15 @@ class InvoiceItemDto {
 export class CreateInvoiceDto {
     @IsMongoId()
     @IsNotEmpty()
-    user_id: string;
+    userId: string;
 
     @IsMongoId()
     @IsNotEmpty()
-    restaurant_id: string;
+    restaurantId: string;
 
     @IsMongoId()
     @IsNotEmpty()
-    table_id: string;
+    tableId: string;
 
     @IsArray()
     @ValidateNested({ each: true })
@@ -43,3 +43,4 @@ export class CreateInvoiceDto {
     @Type(() => InvoiceItemDto)
     items: InvoiceItemDto[];
 }
+

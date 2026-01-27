@@ -27,7 +27,7 @@ class MenuItemConfigDto {
 
   @IsBoolean()
   @IsOptional()
-  is_required: boolean;
+  isRequired: boolean;
 
   @IsArray()
   @ValidateNested({ each: true })

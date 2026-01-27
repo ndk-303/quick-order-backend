@@ -19,13 +19,20 @@ import { Public } from 'src/common/decorators/public.decorator';
 export class ReviewsController {
     constructor(private readonly reviewsService: ReviewsService) { }
 
+    // User's own reviews - MUST be before :restaurantId to avoid route conflict
+    @Get('me')
+    async getUserReviews(@Req() req: any) {
+        const userId = req.user.userId;
+        return this.reviewsService.getUserReviews(userId);
+    }
+
     @Post(':restaurantId')
     async createReview(
         @Param('restaurantId') restaurantId: string,
         @Body() createReviewDto: CreateReviewDto,
         @Req() req: any,
     ) {
-        const userId = req.user.sub;
+        const userId = req.user.userId;
         return this.reviewsService.createReview(userId, restaurantId, createReviewDto);
     }
 
@@ -35,13 +42,13 @@ export class ReviewsController {
         @Body() updateReviewDto: UpdateReviewDto,
         @Req() req: any,
     ) {
-        const userId = req.user.sub;
+        const userId = req.user.userId;
         return this.reviewsService.updateReview(reviewId, userId, updateReviewDto);
     }
 
     @Delete(':reviewId')
     async deleteReview(@Param('reviewId') reviewId: string, @Req() req: any) {
-        const userId = req.user.sub;
+        const userId = req.user.userId;
         await this.reviewsService.deleteReview(reviewId, userId);
         return { message: 'Đã xóa đánh giá thành công' };
     }
@@ -55,10 +62,5 @@ export class ReviewsController {
     ) {
         return this.reviewsService.getRestaurantReviews(restaurantId, page, limit);
     }
-
-    @Get('me')
-    async getUserReviews(@Req() req: any) {
-        const userId = req.user.sub;
-        return this.reviewsService.getUserReviews(userId);
-    }
 }
+

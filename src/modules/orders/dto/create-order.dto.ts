@@ -13,7 +13,7 @@ import { Type } from 'class-transformer';
 class OrderItemDto {
   @IsMongoId()
   @IsNotEmpty()
-  menu_item_id: string;
+  menuItemId: string;
 
   @IsNumber()
   @IsNotEmpty()
@@ -21,7 +21,7 @@ class OrderItemDto {
 
   @IsArray()
   @IsOptional()
-  selected_options: { name: string; price: number }[];
+  selectedOptions: { name: string; price: number }[];
 
   @IsString()
   @IsOptional()
@@ -31,15 +31,11 @@ class OrderItemDto {
 export class CreateOrderDto {
   @IsMongoId()
   @IsNotEmpty()
-  user_id: string;
+  restaurantId: string;
 
   @IsMongoId()
   @IsNotEmpty()
-  restaurant_id: string;
-
-  @IsMongoId()
-  @IsNotEmpty()
-  table_id: string;
+  tableId: string;
 
   @IsArray()
   @ValidateNested({ each: true })
@@ -55,3 +51,4 @@ export class CreateOrderDto {
   @IsNotEmpty()
   long: number;
 }
+

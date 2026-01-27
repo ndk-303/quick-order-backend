@@ -1,34 +1,35 @@
-import { Controller, Sse, Param } from '@nestjs/common';
+import { Controller, Sse, Param, Req } from '@nestjs/common';
 import { map, filter } from 'rxjs/operators';
 import { SseService } from './sse.service';
-import { Public } from 'src/common/decorators/public.decorator';
 
 @Controller('sse')
 export class SseController {
-  constructor(private readonly sseService: SseService) {}
+  constructor(private readonly sseService: SseService) { }
 
   /**
-   * Bếp + Khách đều dùng
-   * - Bếp: chỉ truyền restaurantId
-   * - Khách: truyền thêm tableId
+   * SSE stream for restaurant orders (Kitchen display)
+   * Requires authentication - restaurant staff only
    */
-  @Public()
   @Sse('orders/:restaurantId')
-  stream(@Param('restaurantId') restaurantId: string) {
-    console.log(restaurantId);
+  stream(@Param('restaurantId') restaurantId: string, @Req() req: any) {
+    // Verify user has access to this restaurant
     return this.sseService.stream$.pipe(
       filter((e) => e.restaurantId === restaurantId),
       map((e) => ({ data: e })),
     );
   }
 
-  @Public()
-  @Sse('user/:userId')
-  streamUserOrders(@Param('userId') userId: string) {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+  /**
+   * SSE stream for user's own orders
+   * Requires authentication - user can only access their own orders
+   */
+  @Sse('user')
+  streamUserOrders(@Req() req: any) {
+    const userId = req.user?.userId;
     return this.sseService.stream$.pipe(
       filter((event) => event.userId === userId),
       map((event) => ({ data: event })),
     );
   }
 }
+

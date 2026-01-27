@@ -14,23 +14,23 @@ export class InvoicesService {
 
     async create(createInvoiceDto: CreateInvoiceDto) {
         const { items, ...rest } = createInvoiceDto;
-        let total_amount = 0;
+        let totalAmount = 0;
         const invoiceItems: InvoiceItemSnapshot[] = [];
 
         // Calculate total amount and populate item details snapshot
         for (const item of items) {
-            const menuItem = await this.menuItemModel.findById(item.menu_item_id);
+            const menuItem = await this.menuItemModel.findById(item.menuItemId);
             if (!menuItem) {
-                throw new NotFoundException(`Menu item not found: ${item.menu_item_id}`);
+                throw new NotFoundException(`Menu item not found: ${item.menuItemId}`);
             }
 
             const price = menuItem.price;
             // Add logic for options price if needed in future
 
-            total_amount += price * item.quantity;
+            totalAmount += price * item.quantity;
 
             invoiceItems.push({
-                menu_item_id: new Types.ObjectId(item.menu_item_id),
+                menuItemId: new Types.ObjectId(item.menuItemId),
                 name: menuItem.name,
                 price: price,
                 quantity: item.quantity,
@@ -40,11 +40,11 @@ export class InvoicesService {
 
         const newInvoice = this.invoiceModel.create({
             ...rest,
-            user_id: new Types.ObjectId(createInvoiceDto.user_id),
-            restaurant_id: new Types.ObjectId(createInvoiceDto.restaurant_id),
-            table_id: new Types.ObjectId(createInvoiceDto.table_id),
+            userId: new Types.ObjectId(createInvoiceDto.userId),
+            restaurantId: new Types.ObjectId(createInvoiceDto.restaurantId),
+            tableId: new Types.ObjectId(createInvoiceDto.tableId),
             items: invoiceItems,
-            total_amount,
+            totalAmount,
             status: InvoiceStatus.PENDING,
         });
 
@@ -54,8 +54,8 @@ export class InvoicesService {
     async findOne(id: string): Promise<InvoiceDocument> {
         const invoice = await this.invoiceModel
             .findById(id)
-            .populate('restaurant_id', 'name address')
-            .populate('table_id', 'name')
+            .populate('restaurantId', 'name address')
+            .populate('tableId', 'name')
             .exec();
 
         if (!invoice) {
@@ -77,11 +77,12 @@ export class InvoicesService {
 
     async findByUser(userId: string) {
         const invoices = await this.invoiceModel
-            .find({ user_id: new Types.ObjectId(userId), status: InvoiceStatus.PAID })
-            .populate('restaurant_id', 'name address')
+            .find({ userId: new Types.ObjectId(userId), status: InvoiceStatus.PAID })
+            .populate('restaurantId', 'name address')
             .sort({ createdAt: -1 }) // Newest first
             .exec();
         console.log(invoices);
         return invoices;
     }
 }
+

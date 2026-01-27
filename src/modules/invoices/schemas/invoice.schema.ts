@@ -20,7 +20,7 @@ export enum PaymentMethod {
 
 export class InvoiceItemSnapshot {
     @Prop({ type: Types.ObjectId, required: true })
-    menu_item_id: Types.ObjectId;
+    menuItemId: Types.ObjectId;
 
     @Prop({ required: true })
     name: string;
@@ -38,19 +38,19 @@ export class InvoiceItemSnapshot {
 @Schema({ timestamps: true })
 export class Invoice {
     @Prop({ type: Types.ObjectId, ref: User.name, required: true })
-    user_id: Types.ObjectId;
+    userId: Types.ObjectId;
 
     @Prop({ type: Types.ObjectId, ref: Restaurant.name, required: true })
-    restaurant_id: Types.ObjectId;
+    restaurantId: Types.ObjectId;
 
     @Prop({ type: Types.ObjectId, ref: Table.name, required: true })
-    table_id: Types.ObjectId;
+    tableId: Types.ObjectId;
 
     @Prop({ type: [InvoiceItemSnapshot], required: true })
     items: InvoiceItemSnapshot[];
 
     @Prop({ required: true })
-    total_amount: number;
+    totalAmount: number;
 
     @Prop({
         type: String,
@@ -64,7 +64,8 @@ export class Invoice {
         enum: Object.values(PaymentMethod),
         required: false,
     })
-    payment_method?: PaymentMethod;
+    paymentMethod?: PaymentMethod;
 }
 
 export const InvoiceSchema = SchemaFactory.createForClass(Invoice);
+

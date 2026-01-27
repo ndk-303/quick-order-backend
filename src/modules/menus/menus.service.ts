@@ -43,7 +43,7 @@ export class MenusService {
       ...createMenuItemDto,
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       restaurant: restaurantId,
-      image_url: imageUrl,
+      imageUrl: imageUrl,
     };
 
     const newItem = new this.menuItemModel(data);
@@ -85,7 +85,7 @@ export class MenusService {
         _id: tableId,
         restaurant: restaurantId,
       })
-      .select('_id name restaurant is_active')
+      .select('_id name restaurant isActive')
       .populate('restaurant', '_id name')
       .exec();
     console.log(table);
@@ -94,14 +94,14 @@ export class MenusService {
       throw new BadRequestException('Mã QR không hợp lệ hoặc đã hết hạn!');
     }
 
-    if (!table.is_active) {
+    if (!table.isActive) {
       throw new BadRequestException('Bàn này đang tạm khóa!');
     }
 
     const menu = await this.menuItemModel
       .find({
         restaurant: new Types.ObjectId(restaurantId),
-        is_available: true,
+        isAvailable: true,
       })
       .select('-createdAt -updatedAt -restaurant')
       .exec();
@@ -125,3 +125,4 @@ export class MenusService {
     };
   }
 }
+

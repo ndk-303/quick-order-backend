@@ -4,9 +4,10 @@ import { PaymentMethod } from '../../invoices/schemas/invoice.schema';
 export class CreatePaymentDto {
     @IsMongoId()
     @IsNotEmpty()
-    invoice_id: string;
+    invoiceId: string;
 
     @IsEnum(PaymentMethod)
     @IsNotEmpty()
     method: PaymentMethod;
 }
+

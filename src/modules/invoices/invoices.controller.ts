@@ -8,11 +8,11 @@ export class InvoicesController {
 
     @Post()
     async create(@Body() createInvoiceDto: CreateInvoiceDto, @Req() req: any) {
-        // Determine user_id from req structure (assuming similar to Orders)
+        // Determine userId from req structure (assuming similar to Orders)
         // If not passed in body, inject from req.user
         const userId = req.user?.userId;
         if (userId) {
-            createInvoiceDto.user_id = userId;
+            createInvoiceDto.userId = userId;
         }
         const invoice = await this.invoicesService.create(createInvoiceDto);
         return invoice;

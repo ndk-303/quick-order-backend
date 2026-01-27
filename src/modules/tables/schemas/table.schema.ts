@@ -22,10 +22,11 @@ export class Table {
   qrImage: string;
 
   @Prop({ default: true })
-  is_active: boolean;
+  isActive: boolean;
 }
 
 export const TableSchema = SchemaFactory.createForClass(Table);
 
 // Index ghép để đảm bảo trong 1 quán không có 2 bàn trùng tên
-TableSchema.index({ restaurant_id: 1, name: 1 }, { unique: true });
+TableSchema.index({ restaurant: 1, name: 1 }, { unique: true });
+

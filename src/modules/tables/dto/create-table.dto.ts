@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsString, IsOptional } from 'class-validator';
+import { IsNotEmpty, IsString, IsOptional, IsNumber, IsBoolean } from 'class-validator';
 
 export class CreateTableDto {
   @IsNotEmpty()
@@ -6,11 +6,12 @@ export class CreateTableDto {
   name: string;
 
   @IsNotEmpty()
-  @IsString()
+  @IsNumber()
   capacity: number;
 
-  @IsNotEmpty()
-  @IsString()
   @IsOptional()
-  is_active: boolean;
+  @IsBoolean()
+  isActive?: boolean;
 }
+
+

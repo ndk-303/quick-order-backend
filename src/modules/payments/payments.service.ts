@@ -12,10 +12,10 @@ export class PaymentsService {
     ) { }
 
     async processPayment(createPaymentDto: CreatePaymentDto) {
-        const { invoice_id, method } = createPaymentDto;
+        const { invoiceId, method } = createPaymentDto;
 
         // 1. Get Invoice
-        const invoice: InvoiceDocument = await this.invoicesService.findOne(invoice_id);
+        const invoice: InvoiceDocument = await this.invoicesService.findOne(invoiceId);
 
         if (invoice.status === InvoiceStatus.PAID) {
             throw new BadRequestException('Invoice already paid'); // Or return existing order?
@@ -26,7 +26,7 @@ export class PaymentsService {
 
         // 3. Update Invoice Status
         invoice.status = InvoiceStatus.PAID;
-        invoice.payment_method = method;
+        invoice.paymentMethod = method;
         await invoice.save();
 
         // 4. Create Order
@@ -40,3 +40,4 @@ export class PaymentsService {
         };
     }
 }
+

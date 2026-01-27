@@ -2,7 +2,6 @@ import { Controller, Post, Body, Get, Param, Patch, Req, Query } from '@nestjs/c
 import { OrdersService } from './orders.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderItemStatusDto } from './dto/update-item.dto';
-import { Public } from 'src/common/decorators/public.decorator';
 
 @Controller('orders')
 export class OrdersController {
@@ -20,7 +19,6 @@ export class OrdersController {
     return this.ordersService.findAll(req.user.restaurantId);
   }
 
-  @Public()
   @Get('kitchen/:restaurantId')
   findForKitchen(@Param('restaurantId') restaurantId: string) {
     return this.ordersService.findAll(restaurantId);
@@ -37,9 +35,16 @@ export class OrdersController {
     return this.ordersService.findOne(id);
   }
 
-  @Public()
-  @Patch()
-  updateStatus(@Body() updateItemDto: UpdateOrderItemStatusDto) {
-    return this.ordersService.updateOrderItemStatus(updateItemDto);
+  @Patch(':orderId/items/:itemId/status')
+  updateStatus(
+    @Param('orderId') orderId: string,
+    @Param('itemId') itemId: string,
+    @Body() updateItemDto: UpdateOrderItemStatusDto,
+  ) {
+    return this.ordersService.updateOrderItemStatus({
+      ...updateItemDto,
+      orderId,
+      itemId,
+    });
   }
 }

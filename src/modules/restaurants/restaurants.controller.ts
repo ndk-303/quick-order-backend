@@ -54,6 +54,11 @@ export class RestaurantsController {
     return this.restaurantsService.findAll();
   }
 
+  @Get(':id')
+  async findOne(@Param('id') id: string) {
+    return this.restaurantsService.findById(id);
+  }
+
   @Post('types')
   @UseInterceptors(FileInterceptor('file'))
   async createType(
