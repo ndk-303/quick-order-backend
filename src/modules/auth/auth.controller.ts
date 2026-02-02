@@ -14,7 +14,9 @@ import { LoginDto } from './dto/login.dto';
 import { Public } from '../../common/decorators/public.decorator';
 import { AuthGuard } from '@nestjs/passport';
 import { ConfigService } from '@nestjs/config';
+import { ApiTags, ApiOperation, ApiResponse, ApiBody, ApiBearerAuth } from '@nestjs/swagger';
 
+@ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
   constructor(
@@ -24,12 +26,86 @@ export class AuthController {
 
   @Public()
   @Post('register')
+  @ApiOperation({
+    summary: 'Đăng ký tài khoản mới',
+    description: 'Tạo tài khoản người dùng mới với số điện thoại và mật khẩu'
+  })
+  @ApiBody({ type: RegisterDto })
+  @ApiResponse({
+    status: 201,
+    description: 'Đăng ký thành công',
+    schema: {
+      type: 'object',
+      properties: {
+        message: { type: 'string', example: 'User registered successfully' },
+        user: {
+          type: 'object',
+          properties: {
+            _id: { type: 'string', example: '507f1f77bcf86cd799439011' },
+            phoneNumber: { type: 'string', example: '0901234567' },
+            name: { type: 'string', example: 'Nguyễn Văn A' },
+            role: { type: 'string', example: 'client' }
+          }
+        }
+      }
+    }
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Số điện thoại đã tồn tại hoặc dữ liệu không hợp lệ',
+    schema: {
+      type: 'object',
+      properties: {
+        statusCode: { type: 'number', example: 400 },
+        message: { type: 'string', example: 'Phone number already exists' }
+      }
+    }
+  })
   register(@Body() registerDto: RegisterDto) {
     return this.authService.register(registerDto);
   }
 
   @Public()
   @Post('login')
+  @ApiOperation({
+    summary: 'Đăng nhập',
+    description: 'Đăng nhập với số điện thoại và mật khẩu. Refresh token sẽ được set trong httpOnly cookie.'
+  })
+  @ApiBody({ type: LoginDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Đăng nhập thành công. Access token trả về trong response, refresh token trong cookie.',
+    schema: {
+      type: 'object',
+      properties: {
+        accessToken: {
+          type: 'string',
+          description: 'JWT access token (expires in 15 minutes)',
+          example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'
+        },
+        user: {
+          type: 'object',
+          properties: {
+            _id: { type: 'string', example: '507f1f77bcf86cd799439011' },
+            phoneNumber: { type: 'string', example: '0901234567' },
+            name: { type: 'string', example: 'Nguyễn Văn A' },
+            role: { type: 'string', example: 'client' }
+          }
+        }
+      }
+    }
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Số điện thoại hoặc mật khẩu không đúng',
+    schema: {
+      type: 'object',
+      properties: {
+        statusCode: { type: 'number', example: 401 },
+        message: { type: 'string', example: 'Invalid credentials' }
+      }
+    }
+  })
   async login(
     @Body() loginDto: LoginDto,
     @Res({ passthrough: true }) response: any,
@@ -75,6 +151,21 @@ export class AuthController {
   }
 
   @Post('logout')
+  @ApiBearerAuth('JWT')
+  @ApiOperation({
+    summary: 'Đăng xuất',
+    description: 'Clear refresh token cookie và đăng xuất người dùng'
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Đăng xuất thành công',
+    schema: {
+      type: 'object',
+      properties: {
+        message: { type: 'string', example: 'Logged out successfully' }
+      }
+    }
+  })
   logout(@Res({ passthrough: true }) response: any) {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
     response.clearCookie('refresh_token');
@@ -112,6 +203,18 @@ export class AuthController {
 
   @Public()
   @Get('health')
+  @ApiOperation({
+    summary: 'Health check',
+    description: 'Kiểm tra trạng thái hoạt động của auth service'
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Service đang hoạt động',
+    schema: {
+      type: 'string',
+      example: 'OK'
+    }
+  })
   healthCheck() {
     return 'OK';
   }

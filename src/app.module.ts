@@ -15,10 +15,13 @@ import { RolesGuard } from './common/guards/role.guard';
 import { SseModule } from './modules/sse/sse.module';
 import { InvoicesModule } from './modules/invoices/invoices.module';
 import { PaymentsModule } from './modules/payments/payments.module';
+import { CacheModule } from '@nestjs/cache-manager';
+import { cacheConfig } from './config/cache.config';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
+    CacheModule.registerAsync(cacheConfig),
     DatabaseModule, // Kết nối DB qua module riêng
     RestaurantsModule,
     TablesModule,
