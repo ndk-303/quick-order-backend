@@ -17,6 +17,7 @@ import {
   Restaurant,
   RestaurantDocument,
 } from '../restaurants/schemas/restaurant.schema';
+import { CacheInvalidationService } from 'src/common/services/cache-invalidation.service';
 
 @Injectable()
 export class MenusService {
@@ -25,6 +26,7 @@ export class MenusService {
     @InjectModel(Table.name) private tableModel: Model<TableDocument>,
     @InjectModel(Restaurant.name)
     private restaurantModel: Model<RestaurantDocument>,
+    private readonly cacheInvalidationService: CacheInvalidationService,
   ) { }
 
   private buildMenuQuery(
@@ -86,7 +88,11 @@ export class MenusService {
     };
 
     const newItem = new this.menuItemModel(data);
-    newItem.save();
+    await newItem.save();
+
+    // Invalidate menu cache for this restaurant
+    await this.cacheInvalidationService.invalidateMenu(restaurantId);
+
     return { message: 'ok' };
   }
 
@@ -107,12 +113,21 @@ export class MenusService {
 
     if (!updatedItem)
       throw new NotFoundException(`Không tìm thấy món ăn để cập nhật`);
+
+    // Invalidate menu cache and specific item cache
+    await this.cacheInvalidationService.invalidateMenu(updatedItem.restaurant.toString());
+    await this.cacheInvalidationService.invalidateMenuItem(id);
+
     return updatedItem;
   }
 
   async remove(id: string): Promise<void> {
     const result = await this.menuItemModel.findByIdAndDelete(id).exec();
     if (!result) throw new NotFoundException(`Không tìm thấy món ăn để xóa`);
+
+    // Invalidate menu cache and specific item cache
+    await this.cacheInvalidationService.invalidateMenu(result.restaurant.toString());
+    await this.cacheInvalidationService.invalidateMenuItem(id);
   }
 
   async getMenuForClient(

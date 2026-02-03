@@ -7,14 +7,16 @@ import {
   Patch,
   Delete,
   Req,
+  UseInterceptors,
 } from '@nestjs/common';
 import { TablesService } from './tables.service';
 import { UpdateTableDto } from './dto/update-table.dto';
 import { CreateTableDto } from './dto/create-table.dto';
+import { CacheInterceptor, CacheTTL } from '@nestjs/cache-manager';
 
 @Controller('tables')
 export class TablesController {
-  constructor(private readonly tablesService: TablesService) {}
+  constructor(private readonly tablesService: TablesService) { }
 
   @Post()
   create(@Body() createTableDto: CreateTableDto, @Req() req: any) {
@@ -33,6 +35,8 @@ export class TablesController {
   }
 
   @Get()
+  @UseInterceptors(CacheInterceptor)
+  @CacheTTL(300000) // 5 minutes - tables list changes infrequently
   findAll(@Req() req: any) {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access
     return this.tablesService.findAllByRestaurant(req.user.restaurantId);

@@ -124,7 +124,6 @@ export class RestaurantsService {
       .select('-createdAt -updatedAt');
   }
 
-  // Favorite Restaurants Methods
   async addFavorite(
     userId: string,
     restaurantId: string,

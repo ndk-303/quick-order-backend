@@ -18,7 +18,6 @@ async function bootstrap() {
   app.useGlobalFilters(new AllExceptionsFilter());
   app.setGlobalPrefix('api');
 
-  // Swagger Configuration
   const config = new DocumentBuilder()
     .setTitle('Quick Order API')
     .setDescription('Restaurant ordering system API - Complete documentation for all endpoints')

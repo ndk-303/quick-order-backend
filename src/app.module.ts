@@ -17,11 +17,13 @@ import { InvoicesModule } from './modules/invoices/invoices.module';
 import { PaymentsModule } from './modules/payments/payments.module';
 import { CacheModule } from '@nestjs/cache-manager';
 import { cacheConfig } from './config/cache.config';
+import { CommonModule } from './common/common.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     CacheModule.registerAsync(cacheConfig),
+    CommonModule, // Global module for shared services
     DatabaseModule, // Kết nối DB qua module riêng
     RestaurantsModule,
     TablesModule,

@@ -10,10 +10,12 @@ import {
     Query,
     ParseIntPipe,
     DefaultValuePipe,
+    UseInterceptors,
 } from '@nestjs/common';
 import { ReviewsService } from './reviews.service';
 import { CreateReviewDto, UpdateReviewDto } from './dto/review.dto';
 import { Public } from 'src/common/decorators/public.decorator';
+import { CacheInterceptor, CacheTTL } from '@nestjs/cache-manager';
 
 @Controller('reviews')
 export class ReviewsController {
@@ -21,6 +23,8 @@ export class ReviewsController {
 
     // User's own reviews - MUST be before :restaurantId to avoid route conflict
     @Get('me')
+    @UseInterceptors(CacheInterceptor)
+    @CacheTTL(300000) // 5 minutes
     async getUserReviews(@Req() req: any) {
         const userId = req.user.userId;
         return this.reviewsService.getUserReviews(userId);
@@ -55,6 +59,8 @@ export class ReviewsController {
 
     @Public()
     @Get(':restaurantId')
+    @UseInterceptors(CacheInterceptor)
+    @CacheTTL(600000) // 10 minutes - public endpoint, high traffic
     async getRestaurantReviews(
         @Param('restaurantId') restaurantId: string,
         @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,

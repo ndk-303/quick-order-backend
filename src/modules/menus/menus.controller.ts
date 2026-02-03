@@ -22,6 +22,7 @@ import { CloudinaryService } from 'src/common/services/cloudinary.service';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Public } from 'src/common/decorators/public.decorator';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiConsumes, ApiParam, ApiQuery } from '@nestjs/swagger';
+import { CacheInterceptor, CacheTTL } from '@nestjs/cache-manager';
 
 @ApiTags('Menus')
 @Controller('menus')
@@ -64,6 +65,8 @@ export class MenusController {
   @ApiOperation({ summary: 'Get menu item by ID' })
   @ApiParam({ name: 'id', description: 'Menu item ID' })
   @ApiResponse({ status: 200, description: 'Menu item details' })
+  @UseInterceptors(CacheInterceptor)
+  @CacheTTL(600000) // 10 minutes
   findOne(@Param('id') id: string) {
     return this.menusService.findOne(id);
   }
@@ -184,6 +187,8 @@ export class MenusController {
   })
   @ApiResponse({ status: 400, description: 'Bad request - Invalid table or table is inactive' })
   @ApiResponse({ status: 404, description: 'Restaurant or table not found' })
+  @UseInterceptors(CacheInterceptor)
+  @CacheTTL(300000) // 5 minutes - critical endpoint, high traffic
   async getMenuForGuest(
     @Param('restaurantId') restaurantId: string,
     @Param('tableId') tableId: string,
@@ -261,6 +266,8 @@ export class MenusController {
   })
   @ApiResponse({ status: 400, description: 'Bad request' })
   @ApiResponse({ status: 401, description: 'Unauthorized - Invalid or missing JWT token' })
+  @UseInterceptors(CacheInterceptor)
+  @CacheTTL(120000) // 2 minutes - admin needs fresher data
   async getMenuForAdmin(
     @Req() req: any,
     @Query() filters: MenuFilterDto,

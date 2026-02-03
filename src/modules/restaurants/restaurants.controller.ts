@@ -66,9 +66,29 @@ export class RestaurantsController {
   @ApiOperation({ summary: 'Get all restaurants' })
   @ApiResponse({ status: 200, description: 'List of all restaurants with location and details' })
   @UseInterceptors(CacheInterceptor)
-  @CacheTTL(600000)
   async findAll() {
     return this.restaurantsService.findAll();
+  }
+
+  @Public()
+  @Get('types')
+  @ApiOperation({ summary: 'Get all restaurant types' })
+  @ApiResponse({ status: 200, description: 'List of restaurant types/categories' })
+  @UseInterceptors(CacheInterceptor)
+  async findAllTypes() {
+    return await this.restaurantsService.findAllTypes();
+  }
+
+  @Get('favorites')
+  @ApiBearerAuth('JWT')
+  @ApiOperation({ summary: 'Get user favorite restaurants' })
+  @ApiResponse({ status: 200, description: 'List of user favorite restaurants' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @UseInterceptors(CacheInterceptor)
+  @CacheTTL(300000) // 5 minutes - user favorites
+  async getFavorites(@Req() req: any) {
+    const userId = req.user.userId;
+    return this.restaurantsService.getFavorites(userId);
   }
 
   @Public()
@@ -78,7 +98,6 @@ export class RestaurantsController {
   @ApiResponse({ status: 200, description: 'Restaurant details' })
   @ApiResponse({ status: 404, description: 'Restaurant not found' })
   @UseInterceptors(CacheInterceptor)
-  @CacheTTL(900000) // 15 minutes
   async findOne(@Param('id') id: string) {
     return this.restaurantsService.findById(id);
   }
@@ -111,15 +130,6 @@ export class RestaurantsController {
     }
   }
 
-  @Public()
-  @Get('types')
-  @ApiOperation({ summary: 'Get all restaurant types' })
-  @ApiResponse({ status: 200, description: 'List of restaurant types/categories' })
-  @UseInterceptors(CacheInterceptor)
-  @CacheTTL(3600000) // 1 hour - types are very static
-  async findAllTypes() {
-    return await this.restaurantsService.findAllTypes();
-  }
 
   // Favorite Restaurants Endpoints
   @Post('favorites/:restaurantId')
@@ -144,15 +154,5 @@ export class RestaurantsController {
     return { message: 'Đã xóa khỏi danh sách yêu thích' };
   }
 
-  @Get('favorites')
-  @ApiBearerAuth('JWT')
-  @ApiOperation({ summary: 'Get user favorite restaurants' })
-  @ApiResponse({ status: 200, description: 'List of user favorite restaurants' })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @UseInterceptors(CacheInterceptor)
-  @CacheTTL(300000) // 5 minutes - user favorites
-  async getFavorites(@Req() req: any) {
-    const userId = req.user.userId;
-    return this.restaurantsService.getFavorites(userId);
-  }
+
 }
