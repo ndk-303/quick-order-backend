@@ -41,8 +41,8 @@ export class OrdersController {
   @ApiOperation({ summary: 'Get orders for kitchen display' })
   @ApiParam({ name: 'restaurantId', description: 'Restaurant ID' })
   @ApiResponse({ status: 200, description: 'Kitchen orders' })
-  findForKitchen(@Param('restaurantId') restaurantId: string) {
-    return this.ordersService.findAll(restaurantId);
+  findForKitchen(@Param('restaurantId') restaurantId: string, @Query('category') category: string) {
+    return this.ordersService.findAll(restaurantId, category);
   }
 
   @Get('client')

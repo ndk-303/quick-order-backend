@@ -46,7 +46,7 @@ export class MenuItem {
   @Prop({ type: [MenuItemConfig], default: [] })
   options: MenuItemConfig[];
 
-  @Prop({ enum: MenuCategory, required: false })
+  @Prop({ enum: MenuCategory, required: false, default: MenuCategory.FOOD })
   category: MenuCategory;
 }
 

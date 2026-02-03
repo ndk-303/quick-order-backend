@@ -3,6 +3,7 @@ import { Document, Types } from 'mongoose';
 import { Restaurant } from '../../restaurants/schemas/restaurant.schema';
 import { Table } from '../../tables/schemas/table.schema';
 import { User } from 'src/modules/users/schemas/user.schema';
+import { MenuCategory } from 'src/common/enums/menu-category';
 
 export type OrderDocument = Order & Document;
 
@@ -38,6 +39,9 @@ export class OrderItemSnapshot {
     default: OrderStatus.PENDING,
   })
   status: OrderStatus;
+
+  @Prop({ type: MenuCategory, required: true })
+  category: MenuCategory;
 }
 
 @Schema({ timestamps: true })

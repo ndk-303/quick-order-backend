@@ -9,12 +9,14 @@ import { RestaurantsModule } from '../restaurants/restaurants.module';
 import { TablesModule } from '../tables/tables.module';
 import { MenusModule } from '../menus/menus.module';
 import { SseModule } from '../sse/sse.module';
+import { Restaurant, RestaurantSchema } from '../restaurants/schemas/restaurant.schema';
 
 @Module({
   imports: [
     MongooseModule.forFeature([
       { name: Order.name, schema: OrderSchema },
       { name: Table.name, schema: TableSchema },
+      { name: Restaurant.name, schema: RestaurantSchema },
     ]),
     RestaurantsModule,
     TablesModule,

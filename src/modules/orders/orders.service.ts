@@ -23,6 +23,7 @@ import {
 import { SseService } from '../sse/sse.service';
 import { SseEventType } from 'src/common/interfaces/sse.interface';
 import { UpdateOrderItemStatusDto } from './dto/update-item.dto';
+import { Restaurant, RestaurantDocument } from '../restaurants/schemas/restaurant.schema';
 
 @Injectable()
 export class OrdersService {
@@ -30,33 +31,53 @@ export class OrdersService {
     @InjectModel(Order.name) private orderModel: Model<OrderDocument>,
     @InjectModel(MenuItem.name) private menuItemModel: Model<MenuItemDocument>,
     @InjectModel(Table.name) private tableModel: Model<TableDocument>,
+    @InjectModel(Restaurant.name) private restaurantModel: Model<RestaurantDocument>,
     private readonly sseService: SseService,
   ) { }
 
   async create(createOrderDto: CreateOrderDto, userId: string) {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { restaurantId, tableId, items } = createOrderDto;
+    const [restaurant, table] = await Promise.all([
+      this.restaurantModel.findById(restaurantId),
+      this.tableModel.findById(tableId),
+    ]);
 
-    const table = await this.tableModel.findOne({
-      _id: tableId,
+    if (!restaurant) {
+      throw new BadRequestException('Nhà hàng không hợp lệ!');
+    }
+
+    if (!table) {
+      throw new BadRequestException('Bàn không hợp lệ!');
+    }
+
+    if (!table.isActive) {
+      throw new BadRequestException('Bàn không hoạt động!');
+    }
+
+    const menuItemIds = items.map((item) => item.menuItemId);
+    const menuItems = await this.menuItemModel.find({
+      _id: { $in: menuItemIds },
     });
-    if (!table || !table.isActive)
-      throw new BadRequestException('Bàn không hợp lệ hoặc Token sai!');
 
+    const menuItemMap = new Map(
+      menuItems.map((item) => [item._id.toString(), item])
+    );
     let totalAmount = 0;
-    const snapshotItems: any[] = [];
+    const snapshotItems: OrderItemSnapshot[] = [];
 
     for (const itemDto of items) {
-      const dbItem = await this.menuItemModel.findById(itemDto.menuItemId);
-      if (!dbItem) continue;
-
-      let itemTotalPrice = dbItem.price;
-      if (itemDto.selectedOptions) {
-        itemTotalPrice += itemDto.selectedOptions.reduce(
-          (sum, opt) => sum + opt.price,
-          0,
+      const dbItem = menuItemMap.get(itemDto.menuItemId);
+      if (!dbItem) {
+        throw new BadRequestException(
+          `Món ăn với ID ${itemDto.menuItemId} không tồn tại`
         );
       }
+
+      const optionsPrice = itemDto.selectedOptions?.reduce(
+        (sum, opt) => sum + opt.price,
+        0
+      ) || 0;
+      const itemTotalPrice = dbItem.price + optionsPrice;
       const lineTotal = itemTotalPrice * itemDto.quantity;
       totalAmount += lineTotal;
 
@@ -65,29 +86,25 @@ export class OrdersService {
         name: dbItem.name,
         price: dbItem.price,
         quantity: itemDto.quantity,
-        selectedOptions: itemDto.selectedOptions,
+        selectedOptions: itemDto.selectedOptions || [],
         note: itemDto.note,
         status: OrderStatus.PENDING,
+        category: dbItem.category,
       });
     }
 
     const newOrder = await this.orderModel.create({
-      userId: userId,
+      userId,
       restaurantId,
       tableId,
       items: snapshotItems,
-      totalAmount: totalAmount,
+      totalAmount,
       status: OrderStatus.PENDING,
     });
 
     const order = await this.orderModel
       .findById(newOrder._id)
-      .sort({ createdAt: -1 })
-      .populate({
-        path: 'tableId',
-        model: Table.name,
-        select: 'name',
-      })
+      .populate('tableId', 'name')
       .select('-createdAt -updatedAt -priorityScore')
       .exec();
 
@@ -108,47 +125,48 @@ export class OrdersService {
   async updateOrderItemStatus(updateItemDto: UpdateOrderItemStatusDto) {
     const { orderId, itemId, status } = updateItemDto;
 
-    const updated = await this.orderModel.findOneAndUpdate(
-      {
-        _id: orderId,
-        'items.menuItemId': new Types.ObjectId(itemId),
-      },
-      {
-        $set: { 'items.$.status': status },
-      },
-      { new: true },
-    );
-
-    if (!updated) {
-      throw new NotFoundException('Order or item not found');
+    const order = await this.orderModel.findById(orderId);
+    if (!order) {
+      throw new NotFoundException('Order not found');
     }
 
-    updated.status = this.calculateOrderStatus(updated.items);
-    await updated.save();
+    const item = order.items.find((i) => i.menuItemId.toString() === itemId);
+    if (!item) {
+      throw new NotFoundException('Item not found in order');
+    }
 
-    const order = await this.orderModel
-      .findById(updated._id)
+    if (status === OrderStatus.CANCELLED && item.status !== OrderStatus.PENDING) {
+      throw new BadRequestException('Chỉ có thể hủy món ăn đang ở trạng thái PENDING');
+    }
+
+    item.status = status;
+    order.status = this.calculateOrderStatus(order.items);
+    await order.save();
+
+    const populatedOrder = await this.orderModel
+      .findById(order._id)
       .populate('tableId', 'name')
       .populate('restaurantId', 'name')
       .exec();
 
     this.sseService.emit({
       type: SseEventType.ORDER_UPDATED,
-      restaurantId: order?.restaurantId._id.toString(),
-      userId: order?.userId.toString(),
-      payload: order,
+      restaurantId: populatedOrder?.restaurantId._id.toString(),
+      userId: populatedOrder?.userId.toString(),
+      payload: populatedOrder,
     });
 
-    return order;
+    return populatedOrder;
   }
 
-  async findAll(restaurantId: string) {
+  async findAll(restaurantId: string, category?: string) {
     const orders = await this.orderModel
       .find({
         restaurantId: new Types.ObjectId(restaurantId),
         status: {
           $nin: ['COMPLETED', 'CANCELED'],
         },
+        ...(category && { category }),
       })
       .sort({ createdAt: -1 })
       .populate({
@@ -159,11 +177,14 @@ export class OrdersService {
       .select('-createdAt -updatedAt -priorityScore')
       .exec();
 
+    if (!orders) {
+      throw new NotFoundException('Orders not found');
+    }
+
     return orders;
   }
 
   async findAllForClient(userId: string, status: string[]) {
-    console.log(userId, status);
     const orders = await this.orderModel
       .find({ userId: new Types.ObjectId(userId), status: { $in: status } })
       .sort({ createdAt: -1 })
@@ -175,7 +196,10 @@ export class OrdersService {
       .populate('restaurantId', 'name')
       .select('-createdAt -updatedAt -priorityScore')
       .exec();
-    console.log(orders);
+
+    if (!orders) {
+      throw new NotFoundException('Orders not found');
+    }
     return orders;
   }
 

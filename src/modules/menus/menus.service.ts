@@ -12,6 +12,7 @@ import {
 } from '../../modules/tables/schemas/table.schema';
 import { CreateMenuItemDto } from './dto/create-menu-item.dto';
 import { UpdateMenuItemDto } from './dto/update-menu-item.dto';
+import { MenuFilterDto } from './dto/menu-filter.dto';
 import {
   Restaurant,
   RestaurantDocument,
@@ -25,6 +26,44 @@ export class MenusService {
     @InjectModel(Restaurant.name)
     private restaurantModel: Model<RestaurantDocument>,
   ) { }
+
+  private buildMenuQuery(
+    restaurantId: string,
+    filters: MenuFilterDto,
+    isClientQuery: boolean = false,
+  ) {
+    const query: any = {
+      restaurant: new Types.ObjectId(restaurantId),
+    };
+
+    if (isClientQuery) {
+      query.isAvailable = true;
+    } else if (filters.isAvailable !== undefined) {
+      query.isAvailable = filters.isAvailable;
+    }
+
+    // Category filter
+    if (filters.category) {
+      query.category = filters.category;
+    }
+
+    // Price range filter
+    if (filters.minPrice !== undefined || filters.maxPrice !== undefined) {
+      query.price = {};
+      if (filters.minPrice !== undefined) {
+        query.price.$gte = filters.minPrice;
+      }
+      if (filters.maxPrice !== undefined) {
+        query.price.$lte = filters.maxPrice;
+      }
+    }
+
+    if (filters.search) {
+      query.name = { $regex: filters.search, $options: 'i' };
+    }
+
+    return query;
+  }
 
   async create(
     restaurantId,
@@ -76,10 +115,15 @@ export class MenusService {
     if (!result) throw new NotFoundException(`Không tìm thấy món ăn để xóa`);
   }
 
-  async getMenuForClient(restaurantId: string, tableId: string) {
-    console.log(tableId);
-    console.log(restaurantId);
-
+  async getMenuForClient(
+    restaurantId: string,
+    tableId: string,
+    filters: MenuFilterDto = {},
+  ) {
+    const restaurant = await this.restaurantModel.findById(restaurantId);
+    if (!restaurant) {
+      throw new NotFoundException('Nhà hàng không tồn tại!');
+    }
     const table = await this.tableModel
       .findOne({
         _id: tableId,
@@ -88,37 +132,39 @@ export class MenusService {
       .select('_id name restaurant isActive')
       .populate('restaurant', '_id name')
       .exec();
-    console.log(table);
 
     if (!table) {
-      throw new BadRequestException('Mã QR không hợp lệ hoặc đã hết hạn!');
+      throw new BadRequestException('Bàn không tồn tại!');
     }
 
     if (!table.isActive) {
-      throw new BadRequestException('Bàn này đang tạm khóa!');
+      throw new BadRequestException('Bàn không hoạt động!');
     }
 
+    const query = this.buildMenuQuery(restaurantId, filters, true);
     const menu = await this.menuItemModel
-      .find({
-        restaurant: new Types.ObjectId(restaurantId),
-        isAvailable: true,
-      })
+      .find(query)
       .select('-createdAt -updatedAt -restaurant')
       .exec();
 
+    if (!menu) {
+      throw new BadRequestException('Menu trống!');
+    }
     return {
       table: table,
       menu: menu,
     };
   }
 
-  async getMenuForAdmin(restaurantId: string) {
+  async getMenuForAdmin(restaurantId: string, filters: MenuFilterDto = {}) {
+    const query = this.buildMenuQuery(restaurantId, filters, false);
     const items = await this.menuItemModel
-      .find({
-        restaurant: new Types.ObjectId(restaurantId),
-      })
+      .find(query)
       .select('-createdAt -updatedAt -restaurant')
       .exec();
+    if (!items) {
+      throw new BadRequestException('Menu trống!');
+    }
     return {
       message: 'Lấy menu thành công',
       menu: items,

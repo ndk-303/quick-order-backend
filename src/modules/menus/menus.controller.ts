@@ -12,14 +12,16 @@ import {
   ParseFilePipe,
   FileTypeValidator,
   Req,
+  Query,
 } from '@nestjs/common';
 import { MenusService } from './menus.service';
 import { CreateMenuItemDto } from './dto/create-menu-item.dto';
 import { UpdateMenuItemDto } from './dto/update-menu-item.dto';
+import { MenuFilterDto } from './dto/menu-filter.dto';
 import { CloudinaryService } from 'src/common/services/cloudinary.service';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Public } from 'src/common/decorators/public.decorator';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiConsumes, ApiParam } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiConsumes, ApiParam, ApiQuery } from '@nestjs/swagger';
 
 @ApiTags('Menus')
 @Controller('menus')
@@ -89,23 +91,180 @@ export class MenusController {
 
   @Public()
   @Get(':restaurantId/:tableId')
-  @ApiOperation({ summary: 'Get menu for guest (public endpoint)' })
-  @ApiParam({ name: 'restaurantId', description: 'Restaurant ID' })
-  @ApiParam({ name: 'tableId', description: 'Table ID' })
-  @ApiResponse({ status: 200, description: 'Menu for guest' })
+  @ApiOperation({
+    summary: 'Get menu for guest with optional filters (public endpoint)',
+    description: 'Retrieve menu items for a specific restaurant and table. Supports filtering by category, price range, and search. Only returns available menu items (isAvailable: true).'
+  })
+  @ApiParam({
+    name: 'restaurantId',
+    description: 'Restaurant ID',
+    type: String,
+    example: '507f1f77bcf86cd799439011'
+  })
+  @ApiParam({
+    name: 'tableId',
+    description: 'Table ID',
+    type: String,
+    example: '507f1f77bcf86cd799439012'
+  })
+  @ApiQuery({
+    name: 'category',
+    required: false,
+    enum: ['food', 'drink', 'desert'],
+    description: 'Filter by menu category',
+    example: 'food'
+  })
+  @ApiQuery({
+    name: 'minPrice',
+    required: false,
+    type: Number,
+    description: 'Minimum price filter',
+    example: 50000
+  })
+  @ApiQuery({
+    name: 'maxPrice',
+    required: false,
+    type: Number,
+    description: 'Maximum price filter',
+    example: 200000
+  })
+  @ApiQuery({
+    name: 'search',
+    required: false,
+    type: String,
+    description: 'Search menu items by name (case-insensitive)',
+    example: 'phở'
+  })
+  @ApiQuery({
+    name: 'isAvailable',
+    required: false,
+    type: Boolean,
+    description: 'Filter by availability (ignored for client - always returns only available items)',
+    example: true
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Menu retrieved successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        table: {
+          type: 'object',
+          properties: {
+            _id: { type: 'string', example: '507f1f77bcf86cd799439012' },
+            name: { type: 'string', example: 'Table 5' },
+            isActive: { type: 'boolean', example: true },
+            restaurant: {
+              type: 'object',
+              properties: {
+                _id: { type: 'string', example: '507f1f77bcf86cd799439011' },
+                name: { type: 'string', example: 'Nhà hàng ABC' }
+              }
+            }
+          }
+        },
+        menu: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              _id: { type: 'string', example: '507f1f77bcf86cd799439013' },
+              name: { type: 'string', example: 'Phở bò' },
+              description: { type: 'string', example: 'Phở bò truyền thống Hà Nội' },
+              price: { type: 'number', example: 65000 },
+              imageUrl: { type: 'string', example: 'https://example.com/pho.jpg' },
+              isAvailable: { type: 'boolean', example: true },
+              category: { type: 'string', enum: ['food', 'drink', 'desert'], example: 'food' },
+              options: { type: 'array', items: { type: 'object' } }
+            }
+          }
+        }
+      }
+    }
+  })
+  @ApiResponse({ status: 400, description: 'Bad request - Invalid table or table is inactive' })
+  @ApiResponse({ status: 404, description: 'Restaurant or table not found' })
   async getMenuForGuest(
     @Param('restaurantId') restaurantId: string,
     @Param('tableId') tableId: string,
+    @Query() filters: MenuFilterDto,
   ) {
-    console.log(restaurantId);
-    return this.menusService.getMenuForClient(restaurantId, tableId);
+    return this.menusService.getMenuForClient(restaurantId, tableId, filters);
   }
 
   @Get()
   @ApiBearerAuth('JWT')
-  @ApiOperation({ summary: 'Get menu for restaurant admin' })
-  @ApiResponse({ status: 200, description: 'Restaurant menu' })
-  async getMenuForAdmin(@Req() req: any) {
-    return this.menusService.getMenuForAdmin(req.user.restaurantId);
+  @ApiOperation({
+    summary: 'Get menu for restaurant admin with optional filters',
+    description: 'Retrieve all menu items for the authenticated restaurant admin. Supports filtering by category, price range, availability status, and search.'
+  })
+  @ApiQuery({
+    name: 'category',
+    required: false,
+    enum: ['food', 'drink', 'desert'],
+    description: 'Filter by menu category',
+    example: 'drink'
+  })
+  @ApiQuery({
+    name: 'minPrice',
+    required: false,
+    type: Number,
+    description: 'Minimum price filter',
+    example: 20000
+  })
+  @ApiQuery({
+    name: 'maxPrice',
+    required: false,
+    type: Number,
+    description: 'Maximum price filter',
+    example: 150000
+  })
+  @ApiQuery({
+    name: 'search',
+    required: false,
+    type: String,
+    description: 'Search menu items by name (case-insensitive)',
+    example: 'cà phê'
+  })
+  @ApiQuery({
+    name: 'isAvailable',
+    required: false,
+    type: Boolean,
+    description: 'Filter by availability status. If not specified, returns all items regardless of availability.',
+    example: false
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Menu retrieved successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        message: { type: 'string', example: 'Lấy menu thành công' },
+        menu: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              _id: { type: 'string', example: '507f1f77bcf86cd799439013' },
+              name: { type: 'string', example: 'Cà phê sữa đá' },
+              description: { type: 'string', example: 'Cà phê phin truyền thống' },
+              price: { type: 'number', example: 25000 },
+              imageUrl: { type: 'string', example: 'https://example.com/coffee.jpg' },
+              isAvailable: { type: 'boolean', example: true },
+              category: { type: 'string', enum: ['food', 'drink', 'desert'], example: 'drink' },
+              options: { type: 'array', items: { type: 'object' } }
+            }
+          }
+        }
+      }
+    }
+  })
+  @ApiResponse({ status: 400, description: 'Bad request' })
+  @ApiResponse({ status: 401, description: 'Unauthorized - Invalid or missing JWT token' })
+  async getMenuForAdmin(
+    @Req() req: any,
+    @Query() filters: MenuFilterDto,
+  ) {
+    return this.menusService.getMenuForAdmin(req.user.restaurantId, filters);
   }
 }
