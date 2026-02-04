@@ -15,7 +15,8 @@ export enum InvoiceStatus {
 export enum PaymentMethod {
     BANK = 'BANK',
     MOMO = 'MOMO',
-    ZALOPAY = 'ZALOPAY'
+    ZALOPAY = 'ZALOPAY',
+    VNPAY = 'VNPAY'
 }
 
 export class InvoiceItemSnapshot {

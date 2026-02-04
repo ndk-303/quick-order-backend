@@ -120,7 +120,7 @@ export class AuthController {
       sameSite: 'none',
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
-
+    console.log("Access Token:", accessToken)
     return { accessToken, user };
   }
 

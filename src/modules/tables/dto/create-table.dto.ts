@@ -12,6 +12,10 @@ export class CreateTableDto {
   @IsOptional()
   @IsBoolean()
   isActive?: boolean;
+
+  @IsOptional()
+  @IsString()
+  location?: string;
 }
 
 

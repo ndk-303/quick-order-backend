@@ -272,6 +272,7 @@ export class MenusController {
     @Req() req: any,
     @Query() filters: MenuFilterDto,
   ) {
+    console.log(req.user.restaurantId)
     return this.menusService.getMenuForAdmin(req.user.restaurantId, filters);
   }
 }

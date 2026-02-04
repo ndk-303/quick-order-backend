@@ -1,4 +1,6 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import type { Cache } from 'cache-manager';
+import { BadRequestException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import * as QRCode from 'qrcode';
@@ -14,29 +16,45 @@ export class TablesService {
     @InjectModel(Table.name)
     private readonly tableModel: Model<TableDocument>,
     private readonly configService: ConfigService,
+    @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
   ) { }
+
+  private getCacheKey(restaurantId: string): string {
+    return `tables:${restaurantId}`;
+  }
 
   async create(createTableDto: CreateTableDto, restaurantId: string) {
     const token = uuidv4();
-
-    const { name, capacity } = createTableDto;
+    console.log(restaurantId);
+    const { name, capacity, location } = createTableDto;
     console.log(createTableDto);
 
-    const table = await this.tableModel.create({
-      name: name,
-      capacity: capacity,
-      restaurant: restaurantId,
-      token,
-    });
+    try {
+      const table = await this.tableModel.create({
+        name: name,
+        capacity: capacity,
+        restaurant: restaurantId,
+        token,
+      });
 
-    // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
-    const qrUrl = `${this.configService.get('FRONTEND_URL')}/menus/${table.restaurant}/${table._id}`;
-    const qrImage = await QRCode.toDataURL(qrUrl);
-    await this.tableModel.findByIdAndUpdate(table._id, { qrImage: qrImage });
-    return {
-      tableId: table._id,
-      qrImage: qrImage,
-    };
+      // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
+      const qrUrl = `${this.configService.get('FRONTEND_URL')}/menus/${table.restaurant}/${table._id}`;
+      const qrImage = await QRCode.toDataURL(qrUrl);
+      await this.tableModel.findByIdAndUpdate(table._id, { qrImage: qrImage });
+
+      const cacheKey = this.getCacheKey(restaurantId);
+      console.log(`[Cache Debug] Create - RestaurantId: ${restaurantId}, Deleting Key: ${cacheKey}`);
+      await this.cacheManager.del(cacheKey);
+
+      return {
+        tableId: table._id,
+        qrImage: qrImage,
+      };
+    } catch (error) {
+      console.log('Failed to create table', error);
+      throw new BadRequestException('Failed to create table');
+    }
+
   }
 
   async generateQrCode(tableId: string) {
@@ -58,14 +76,24 @@ export class TablesService {
   }
 
   async findAllByRestaurant(restaurantId: string) {
-    // const restaurant = await this.restaurantModel.findOne({ ownerId: userId });
-    // if (!restaurant) {
-    //   throw new BadRequestException('Nhà hàng không tồn tại');
-    // }
+    const cacheKey = this.getCacheKey(restaurantId);
+    console.log(`[Cache Debug] FindAll - RestaurantId: ${restaurantId}, Key: ${cacheKey}`);
+    const cachedData = await this.cacheManager.get(cacheKey);
 
-    return await this.tableModel
+    if (cachedData) {
+      console.log('[Cache Debug] Returning cached data');
+      return cachedData;
+    }
+
+    console.log('[Cache Debug] Cache miss, fetching from DB');
+
+    const tables = await this.tableModel
       .find({ restaurant: restaurantId })
       .select('-restaurant -token');
+
+    await this.cacheManager.set(cacheKey, tables, 300000); // 5 minutes
+
+    return tables;
   }
 
   async findById(id: string) {
@@ -91,6 +119,8 @@ export class TablesService {
       throw new NotFoundException('Table not found');
     }
 
+    await this.cacheManager.del(this.getCacheKey(String(table.restaurant)));
+
     return table;
   }
 
@@ -100,6 +130,8 @@ export class TablesService {
     if (!table) {
       throw new NotFoundException('Table not found');
     }
+
+    await this.cacheManager.del(this.getCacheKey(String(table.restaurant)));
 
     return {
       message: 'Table deleted successfully',
