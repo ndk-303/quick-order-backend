@@ -194,8 +194,6 @@ export class PaymentsService {
             await invoice.save();
             console.log('Invoice updated to PAID');
 
-            // Only create order if not exists? Assuming one invoice -> one order
-            // The original logic created an order.
             const order = await this.ordersService.createFromInvoice(invoice);
             console.log('Order created:', order._id);
 

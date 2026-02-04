@@ -33,17 +33,23 @@ export class PaymentsController {
             const result: any = await this.paymentsService.verifyReturnUrl(query);
             console.log('vnpayReturn - result:', result);
 
-            // Redirect to frontend
             const frontendUrl = this.configService.get<string>('FRONTEND_URL');
+            const invoiceId = query.vnp_TxnRef;
+
+            // Redirect to frontend
             if (result && (result.success || result._id)) {
-                return res.redirect(`${frontendUrl}/orders?status=success&invoiceId=${result._id || query.vnp_TxnRef}`);
+                // Success: redirect to orders page with success status
+                return res.redirect(`${frontendUrl}/orders?status=success&invoiceId=${result._id || invoiceId}`);
             } else {
-                return res.redirect(`${frontendUrl}/orders?status=failed`);
+                // Failed: redirect back to invoice page (keep cart intact)
+                return res.redirect(`${frontendUrl}/invoice/${invoiceId}?status=failed`);
             }
         } catch (error) {
             console.error('Error in vnpayReturn:', error);
             const frontendUrl = this.configService.get<string>('FRONTEND_URL');
-            return res.redirect(`${frontendUrl}/orders?status=error&message=${encodeURIComponent(error.message || 'Unknown error')}`);
+            const invoiceId = query.vnp_TxnRef;
+            // Error: redirect back to invoice page with error message
+            return res.redirect(`${frontendUrl}/invoice/${invoiceId}?status=error&message=${encodeURIComponent(error.message || 'Unknown error')}`);
         }
     }
 
