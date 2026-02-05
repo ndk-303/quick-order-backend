@@ -22,9 +22,6 @@ export class AuthService {
   async register(registerDto: RegisterDto) {
     const { phoneNumber, password, fullName, address } = registerDto;
 
-    if (!phoneNumber || !password) {
-      throw new BadRequestException('Vui lòng nhập đầy đủ thông tin');
-    }
     const checkedAccount = await this.userModel.findOne({ phoneNumber });
 
     if (checkedAccount) {

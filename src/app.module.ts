@@ -18,6 +18,7 @@ import { PaymentsModule } from './modules/payments/payments.module';
 import { CacheModule } from '@nestjs/cache-manager';
 import { cacheConfig } from './config/cache.config';
 import { CommonModule } from './common/common.module';
+import { DevToolsModule } from './modules/dev-tools/dev-tools.module';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { CommonModule } from './common/common.module';
     SseModule,
     InvoicesModule,
     PaymentsModule,
+    DevToolsModule,
   ],
   providers: [
     {
