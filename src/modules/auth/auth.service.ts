@@ -21,7 +21,6 @@ export class AuthService {
 
   async register(registerDto: RegisterDto) {
     const { phoneNumber, password, fullName, address } = registerDto;
-
     const checkedAccount = await this.userModel.findOne({ phoneNumber });
 
     if (checkedAccount) {
