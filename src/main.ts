@@ -22,8 +22,7 @@ async function bootstrap() {
     .setTitle('Quick Order API')
     .setDescription('Restaurant ordering system API - Complete documentation for all endpoints')
     .setVersion('1.0.0')
-    .addServer('https://quick-order-backend.onrender.com/api', 'Production Server')
-    .addServer('http://localhost:3000/api', 'Local Development')
+    .addServer('https://quick-order-backend.onrender.com', 'Production Server')
     .addBearerAuth(
       {
         type: 'http',
@@ -57,7 +56,5 @@ async function bootstrap() {
   const port = process.env.PORT || 3000;
   await app.listen(port);
   console.log(`Server running on port: ${port}`);
-  console.log(`Swagger docs available at: http://localhost:${port}/docs`);
-  console.log(`OpenAPI JSON available at: http://localhost:${port}/docs/openapi.json`);
 }
 bootstrap();
