@@ -40,7 +40,7 @@ export class OrderItemSnapshot {
   })
   status: OrderStatus;
 
-  @Prop({ type: MenuCategory, required: true })
+  @Prop({ type: String, enum: Object.values(MenuCategory), required: true })
   category: MenuCategory;
 }
 

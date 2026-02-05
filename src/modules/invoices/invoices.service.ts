@@ -17,7 +17,6 @@ export class InvoicesService {
         let totalAmount = 0;
         const invoiceItems: InvoiceItemSnapshot[] = [];
 
-        // Calculate total amount and populate item details snapshot
         for (const item of items) {
             const menuItem = await this.menuItemModel.findById(item.menuItemId);
             if (!menuItem) {
@@ -25,8 +24,6 @@ export class InvoicesService {
             }
 
             const price = menuItem.price;
-            // Add logic for options price if needed in future
-
             totalAmount += price * item.quantity;
 
             invoiceItems.push({
@@ -35,6 +32,7 @@ export class InvoicesService {
                 price: price,
                 quantity: item.quantity,
                 note: item.note,
+                category: item.category,
             });
         }
 

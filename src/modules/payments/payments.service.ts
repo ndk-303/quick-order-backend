@@ -89,32 +89,23 @@ export class PaymentsService {
 
     async verifyReturnUrl(vnp_Params: any) {
         try {
-            console.log('Service verifyReturnUrl', vnp_Params);
             const secureHash = vnp_Params['vnp_SecureHash'];
-            console.log('secureHash', secureHash);
 
             delete vnp_Params['vnp_SecureHash'];
             delete vnp_Params['vnp_SecureHashType'];
-            console.log('vnp_Params', vnp_Params);
 
             const sortedParams = this.sortObject(vnp_Params);
-            console.log('sortedParams', sortedParams);
             const secretKey = this.configService.get<string>('VNP_HASH_SECRET');
-            console.log('secretKey', secretKey);
 
             const signData = qs.stringify(sortedParams, { encode: false });
-            console.log('signData', signData);
             const hmac = crypto.createHmac('sha512', secretKey!);
             const signed = hmac.update(Buffer.from(signData, 'utf-8')).digest('hex');
-            console.log('signed', signed);
 
             if (secureHash === signed) {
                 if (vnp_Params['vnp_ResponseCode'] === '00') {
                     const invoiceId = vnp_Params['vnp_TxnRef'];
-                    console.log('Payment successful, completing payment for invoice:', invoiceId);
                     return await this.completePayment(invoiceId, PaymentMethod.VNPAY);
                 } else {
-                    console.log('Payment failed with response code:', vnp_Params['vnp_ResponseCode']);
                     return { code: '97', message: 'Fail' };
                 }
             } else {
@@ -171,10 +162,8 @@ export class PaymentsService {
         }
     }
 
-    // Helper to complete payment and create order
     private async completePayment(invoiceId: string, method: PaymentMethod) {
         try {
-            console.log('completePayment - invoiceId:', invoiceId);
             const invoice = await this.invoicesService.findOne(invoiceId);
 
             if (!invoice) {
@@ -182,20 +171,14 @@ export class PaymentsService {
                 throw new NotFoundException(`Invoice ${invoiceId} not found`);
             }
 
-            console.log('Invoice found:', invoice._id, 'Status:', invoice.status);
-
             if (invoice.status === InvoiceStatus.PAID) {
-                console.log('Invoice already paid');
                 return { _id: invoice._id, status: 'PAID' };
             }
 
             invoice.status = InvoiceStatus.PAID;
             invoice.paymentMethod = method;
             await invoice.save();
-            console.log('Invoice updated to PAID');
-
-            const order = await this.ordersService.createFromInvoice(invoice);
-            console.log('Order created:', order._id);
+            await this.ordersService.createFromInvoice(invoice);
 
             return invoice;
         } catch (error) {
@@ -209,7 +192,6 @@ export class PaymentsService {
         const str: string[] = [];
         let key;
         for (key in obj) {
-            // Use Object.prototype.hasOwnProperty.call() to handle objects with null prototype
             if (Object.prototype.hasOwnProperty.call(obj, key)) {
                 str.push(encodeURIComponent(key));
             }

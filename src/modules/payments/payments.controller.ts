@@ -29,19 +29,14 @@ export class PaymentsController {
     @ApiResponse({ status: 400, description: 'Invalid payment data' })
     async vnpayReturn(@Query() query: any, @Res() res: Response) {
         try {
-            console.log('vnpayReturn - query:', query);
             const result: any = await this.paymentsService.verifyReturnUrl(query);
-            console.log('vnpayReturn - result:', result);
 
             const frontendUrl = this.configService.get<string>('FRONTEND_URL');
             const invoiceId = query.vnp_TxnRef;
 
-            // Redirect to frontend
             if (result && (result.success || result._id)) {
-                // Success: redirect to orders page with success status
                 return res.redirect(`${frontendUrl}/orders?status=success&invoiceId=${result._id || invoiceId}`);
             } else {
-                // Failed: redirect back to invoice page (keep cart intact)
                 return res.redirect(`${frontendUrl}/invoice/${invoiceId}?status=failed`);
             }
         } catch (error) {

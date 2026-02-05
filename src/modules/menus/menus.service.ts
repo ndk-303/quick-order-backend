@@ -165,6 +165,7 @@ export class MenusService {
     if (!menu) {
       throw new BadRequestException('Menu trống!');
     }
+    console.log(menu);
     return {
       table: table,
       menu: menu,

@@ -24,6 +24,7 @@ import { SseService } from '../sse/sse.service';
 import { SseEventType } from 'src/common/interfaces/sse.interface';
 import { UpdateOrderItemStatusDto } from './dto/update-item.dto';
 import { Restaurant, RestaurantDocument } from '../restaurants/schemas/restaurant.schema';
+import { MenuCategory } from 'src/common/enums/menu-category';
 
 @Injectable()
 export class OrdersService {
@@ -135,12 +136,14 @@ export class OrdersService {
       throw new NotFoundException('Item not found in order');
     }
 
-    if (status === OrderStatus.CANCELLED && item.status !== OrderStatus.PENDING) {
-      throw new BadRequestException('Chỉ có thể hủy món ăn đang ở trạng thái PENDING');
-    }
+    this.validateStatusTransition(item.status, status);
 
     item.status = status;
+
+    order.markModified('items');
+
     order.status = this.calculateOrderStatus(order.items);
+
     await order.save();
 
     const populatedOrder = await this.orderModel
@@ -159,14 +162,15 @@ export class OrdersService {
     return populatedOrder;
   }
 
-  async findAll(restaurantId: string, category?: string) {
+  async findAll(restaurantId: string, category?: MenuCategory) {
+    console.log('Category', category);
+    console.log('equal: ', category === MenuCategory.FOOD);
     const orders = await this.orderModel
       .find({
         restaurantId: new Types.ObjectId(restaurantId),
         status: {
           $nin: ['COMPLETED', 'CANCELED'],
         },
-        ...(category && { category }),
       })
       .sort({ createdAt: -1 })
       .populate({
@@ -175,6 +179,7 @@ export class OrdersService {
         select: 'name',
       })
       .select('-createdAt -updatedAt -priorityScore')
+      .lean()
       .exec();
 
     if (!orders) {
@@ -204,15 +209,17 @@ export class OrdersService {
   }
 
   async createFromInvoice(invoice: any) {
+    console.log('Invoice items', invoice.items);
     const orderItems = invoice.items.map(item => ({
       menuItemId: item.menuItemId,
       name: item.name,
       price: item.price,
       quantity: item.quantity,
       note: item.note,
-      status: OrderStatus.PENDING
+      status: OrderStatus.PENDING,
+      category: item.category,
     }));
-
+    console.log('OrderItems', orderItems);
     const newOrder = new this.orderModel({
       userId: invoice.userId,
       restaurantId: invoice.restaurantId,
@@ -224,6 +231,20 @@ export class OrdersService {
 
     const savedOrder = await newOrder.save();
 
+    const populatedOrder = await this.orderModel
+      .findById(savedOrder._id)
+      .populate('tableId', 'name')
+      .populate('restaurantId', 'name')
+      .exec();
+
+    this.sseService.emit({
+      type: SseEventType.ORDER_CREATED,
+      restaurantId: populatedOrder?.restaurantId._id.toString(),
+      tableId: populatedOrder?.tableId._id.toString(),
+      payload: populatedOrder,
+      userId: populatedOrder?.userId.toString(),
+    });
+
     return savedOrder;
   }
 
@@ -233,8 +254,51 @@ export class OrdersService {
     return order;
   }
 
+  private validateStatusTransition(currentStatus: OrderStatus, newStatus: OrderStatus) {
+    if (currentStatus === newStatus) {
+      return;
+    }
+
+    const statusHierarchy = {
+      [OrderStatus.PENDING]: 1,
+      [OrderStatus.COOKING]: 2,
+      [OrderStatus.COMPLETED]: 3,
+      [OrderStatus.CANCELLED]: 0, // Special case
+    };
+
+    if (newStatus === OrderStatus.CANCELLED) {
+      if (currentStatus !== OrderStatus.PENDING) {
+        throw new BadRequestException(
+          `Không thể hủy món ăn ở trạng thái ${currentStatus}. Chỉ có thể hủy món ở trạng thái PENDING.`
+        );
+      }
+      return;
+    }
+
+    if (currentStatus === OrderStatus.CANCELLED) {
+      throw new BadRequestException(
+        'Không thể thay đổi trạng thái của món đã bị hủy.'
+      );
+    }
+
+    // Cannot change from COMPLETED to anything else
+    if (currentStatus === OrderStatus.COMPLETED) {
+      throw new BadRequestException(
+        'Không thể thay đổi trạng thái của món đã hoàn thành.'
+      );
+    }
+
+    // Only allow forward progression
+    if (statusHierarchy[newStatus] <= statusHierarchy[currentStatus]) {
+      throw new BadRequestException(
+        `Không thể cập nhật trạng thái lùi từ ${currentStatus} về ${newStatus}. Chỉ được phép cập nhật tiến.`
+      );
+    }
+  }
+
   calculateOrderStatus(items: OrderItemSnapshot[]): OrderStatus {
-    if (items.some((i) => i.status === OrderStatus.COMPLETED)) {
+    if (items.every((i) => i.status === OrderStatus.COMPLETED || i.status === OrderStatus.CANCELLED) &&
+      items.some((i) => i.status === OrderStatus.COMPLETED)) {
       return OrderStatus.COMPLETED;
     }
     if (items.every((i) => i.status === OrderStatus.CANCELLED)) {

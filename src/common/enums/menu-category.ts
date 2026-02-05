@@ -1,5 +1,5 @@
 export enum MenuCategory {
-  FOOD = 'food',
-  DRINK = 'drink',
-  DESERT = 'desert',
+  FOOD = 'FOOD',
+  DRINK = 'DRINK',
+  DESSERT = 'DESSERT',
 }

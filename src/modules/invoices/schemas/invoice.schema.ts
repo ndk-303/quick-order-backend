@@ -3,6 +3,7 @@ import { Document, Types } from 'mongoose';
 import { Restaurant } from '../../restaurants/schemas/restaurant.schema';
 import { Table } from '../../tables/schemas/table.schema';
 import { User } from '../../users/schemas/user.schema';
+import { MenuCategory } from 'src/common/enums/menu-category';
 
 export type InvoiceDocument = Invoice & Document;
 
@@ -34,6 +35,9 @@ export class InvoiceItemSnapshot {
 
     @Prop()
     note: string;
+
+    @Prop({ type: String, enum: Object.values(MenuCategory), required: true })
+    category: MenuCategory;
 }
 
 @Schema({ timestamps: true })

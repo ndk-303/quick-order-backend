@@ -22,6 +22,8 @@ async function bootstrap() {
     .setTitle('Quick Order API')
     .setDescription('Restaurant ordering system API - Complete documentation for all endpoints')
     .setVersion('1.0.0')
+    .addServer('https://quick-order-backend.onrender.com/api', 'Production Server')
+    .addServer('http://localhost:3000/api', 'Local Development')
     .addBearerAuth(
       {
         type: 'http',
@@ -39,18 +41,23 @@ async function bootstrap() {
     .addTag('Payments', 'Payment processing')
     .addTag('Users', 'User management')
     .addTag('Invoices', 'Invoice operations')
-    .addTag('SSE', 'Server-Sent Events for real-time updates')
+    .addTag('Reviews', 'Restaurant reviews and ratings')
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api-docs', app, document, {
+  SwaggerModule.setup('docs', app, document, {
     customSiteTitle: 'Quick Order API Docs',
     customCss: '.swagger-ui .topbar { display: none }',
+  });
+
+  app.use('/docs/openapi.json', (req, res) => {
+    res.json(document);
   });
 
   const port = process.env.PORT || 3000;
   await app.listen(port);
   console.log(`Server running on port: ${port}`);
-  console.log(`Swagger docs available at: http://localhost:${port}/api-docs`);
+  console.log(`Swagger docs available at: http://localhost:${port}/docs`);
+  console.log(`OpenAPI JSON available at: http://localhost:${port}/docs/openapi.json`);
 }
 bootstrap();
