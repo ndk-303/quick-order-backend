@@ -44,6 +44,16 @@ export class User {
 
   @Prop({ type: Types.ObjectId, ref: 'Restaurant', required: false })
   restaurantId?: Types.ObjectId;
+
+  // OTP Verification Fields
+  @Prop({ default: false })
+  isVerified: boolean;
+
+  @Prop({ select: false })
+  verificationOtp?: string;
+
+  @Prop({ select: false })
+  otpExpiry?: Date;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

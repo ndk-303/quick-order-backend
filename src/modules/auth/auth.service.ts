@@ -29,16 +29,23 @@ export class AuthService {
 
     const hashedPassword = await hashPassword(password);
 
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otpExpiry = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
+
     const newUser = await this.userModel.create({
       phoneNumber,
       password: hashedPassword,
       fullName,
       address: address ?? '',
       authProviders: ['phone'],
+      verificationOtp: otp,
+      otpExpiry: otpExpiry,
     });
 
+    console.log(`[OTP] Registration OTP for ${phoneNumber}: ${otp}`);
+
     return {
-      message: 'Đăng ký thành công',
+      message: 'Đăng ký thành công. Vui lòng kiểm tra mã OTP để kích hoạt tài khoản.',
       _id: newUser._id,
     };
   }
@@ -48,7 +55,7 @@ export class AuthService {
 
     const user = await this.userModel
       .findOne({ phoneNumber })
-      .select('_id fullName email phoneNumber password role restaurantId authProviders');
+      .select('_id fullName email phoneNumber password role restaurantId authProviders isVerified');
 
     if (!user) {
       throw new UnauthorizedException('Số điện thoại hoặc mật khẩu không đúng');
@@ -61,6 +68,10 @@ export class AuthService {
     const checkedPassword = await comparePassword(password, user.password);
     if (!checkedPassword) {
       throw new UnauthorizedException('Số điện thoại hoặc mật khẩu không đúng');
+    }
+
+    if (!user.isActive) {
+      throw new UnauthorizedException('Tài khoản chưa được kích hoạt. Vui lòng xác thực OTP.');
     }
 
     const { accessToken, refreshToken } = this.generateTokens(user);
@@ -146,26 +157,70 @@ export class AuthService {
     return { accessToken, refreshToken };
   }
 
-  // ===== FORGOT PASSWORD - Direct Reset (For Demo) =====
-  async resetPassword(phoneNumber: string, newPassword: string) {
+  async verifyAccount(phoneNumber: string, otp: string) {
+    const user = await this.userModel
+      .findOne({ phoneNumber })
+      .select('+verificationOtp +otpExpiry');
+
+    if (!user) {
+      throw new BadRequestException('Số điện thoại không tồn tại');
+    }
+
+    if (user.isActive) {
+      throw new BadRequestException('Tài khoản đã được kích hoạt');
+    }
+
+    if (!user.verificationOtp || !user.otpExpiry) {
+      throw new BadRequestException('Không tìm thấy mã OTP. Vui lòng yêu cầu gửi lại.');
+    }
+
+    if (new Date() > user.otpExpiry) {
+      throw new BadRequestException('Mã OTP đã hết hạn. Vui lòng yêu cầu gửi lại.');
+    }
+
+    if (user.verificationOtp !== otp) {
+      throw new BadRequestException('Mã OTP không đúng');
+    }
+
+    await this.userModel.updateOne(
+      { _id: user._id },
+      {
+        isActive: true,
+        verificationOtp: null,
+        otpExpiry: null,
+      },
+    );
+
+    return { message: 'Kích hoạt tài khoản thành công' };
+  }
+
+  async resendVerificationOtp(phoneNumber: string) {
     const user = await this.userModel.findOne({ phoneNumber });
 
     if (!user) {
       throw new BadRequestException('Số điện thoại không tồn tại');
     }
 
-    const hashedPassword = await hashPassword(newPassword);
+    if (user.isActive) {
+      throw new BadRequestException('Tài khoản đã được kích hoạt');
+    }
+
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otpExpiry = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
 
     await this.userModel.updateOne(
       { _id: user._id },
-      { password: hashedPassword, refreshToken: null }, // Clear refresh token for security
+      {
+        verificationOtp: otp,
+        otpExpiry: otpExpiry,
+      },
     );
 
-    return { message: 'Đặt lại mật khẩu thành công' };
+    console.log(`[OTP] Resend verification OTP for ${phoneNumber}: ${otp}`);
+
+    return { message: 'Mã OTP đã được gửi lại' };
   }
 
-  // ===== FORGOT PASSWORD - OTP Flow (For Production) =====
-  // TODO: Implement SMS OTP service integration
   async requestPasswordResetOtp(phoneNumber: string) {
     const user = await this.userModel.findOne({ phoneNumber });
 
@@ -173,20 +228,22 @@ export class AuthService {
       throw new BadRequestException('Số điện thoại không tồn tại');
     }
 
-    // TODO: Generate 6-digit OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otpExpiry = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
 
-    // TODO: Save OTP to database or cache (Redis) with expiry (5 minutes)
-    // Example: await this.cacheService.set(`otp:${phoneNumber}`, otp, 300);
+    await this.userModel.updateOne(
+      { _id: user._id },
+      {
+        verificationOtp: otp,
+        otpExpiry: otpExpiry,
+      },
+    );
 
-    // TODO: Send OTP via SMS service (Twilio, AWS SNS, etc.)
-    // Example: await this.smsService.sendOtp(phoneNumber, otp);
+    console.log(`[OTP] Password reset OTP for ${phoneNumber}: ${otp}`);
 
-    // For now, just return success (in production, don't return OTP!)
     return {
       message: 'Mã OTP đã được gửi đến số điện thoại của bạn',
-      // REMOVE THIS IN PRODUCTION:
-      otp: otp, // Only for testing without real SMS
+      otp: otp,
     };
   }
 
@@ -195,30 +252,37 @@ export class AuthService {
     otp: string,
     newPassword: string,
   ) {
-    const user = await this.userModel.findOne({ phoneNumber });
+    const user = await this.userModel
+      .findOne({ phoneNumber })
+      .select('+verificationOtp +otpExpiry');
 
     if (!user) {
       throw new BadRequestException('Số điện thoại không tồn tại');
     }
 
-    // TODO: Verify OTP from cache/database
-    // const cachedOtp = await this.cacheService.get(`otp:${phoneNumber}`);
-    // if (!cachedOtp || cachedOtp !== otp) {
-    //   throw new BadRequestException('Mã OTP không đúng hoặc đã hết hạn');
-    // }
+    if (!user.verificationOtp || !user.otpExpiry) {
+      throw new BadRequestException('Không tìm thấy mã OTP. Vui lòng yêu cầu gửi lại.');
+    }
 
-    // Temporary: Skip OTP verification for demo
-    console.log(`[DEBUG] OTP verification skipped. Received OTP: ${otp}`);
+    if (new Date() > user.otpExpiry) {
+      throw new BadRequestException('Mã OTP đã hết hạn. Vui lòng yêu cầu gửi lại.');
+    }
+    if (user.verificationOtp !== otp) {
+      throw new BadRequestException('Mã OTP không đúng');
+    }
 
     const hashedPassword = await hashPassword(newPassword);
 
+    // Reset password and clear OTP
     await this.userModel.updateOne(
       { _id: user._id },
-      { password: hashedPassword, refreshToken: null },
+      {
+        password: hashedPassword,
+        refreshToken: null,
+        verificationOtp: null,
+        otpExpiry: null,
+      },
     );
-
-    // TODO: Delete used OTP from cache
-    // await this.cacheService.delete(`otp:${phoneNumber}`);
 
     return { message: 'Đặt lại mật khẩu thành công' };
   }
