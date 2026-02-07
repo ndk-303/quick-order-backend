@@ -1,11 +1,14 @@
-name: Deploy
-on:
-  push:
-    branches: [ main ]
-
 jobs:
-  deploy:
+  test:
     runs-on: ubuntu-latest
     steps:
-      - name: Trigger Deploy
+      - uses: actions/checkout@v4
+      - run: pnpm install
+      - run: pnpm run test
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Render
         run: curl -X GET ${{ secrets.RENDER_DEPLOY_HOOK }}
