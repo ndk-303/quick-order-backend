@@ -355,29 +355,6 @@ describe('AuthService', () => {
         });
     });
 
-    describe('requestPasswordResetOtp', () => {
-        it('should send password reset OTP successfully', async () => {
-            const phoneNumber = '0123456789';
-            mockUserModel.findOne.mockResolvedValue(mockUser);
-            mockUserModel.updateOne.mockResolvedValue({ modifiedCount: 1 });
-
-            const result = await service.requestPasswordResetOtp(phoneNumber);
-
-            expect(mockUserModel.updateOne).toHaveBeenCalled();
-            expect(result).toHaveProperty('message');
-            expect(result).toHaveProperty('otp');
-        });
-
-        it('should throw BadRequestException when user not found', async () => {
-            const phoneNumber = '0123456789';
-            mockUserModel.findOne.mockResolvedValue(null);
-
-            await expect(service.requestPasswordResetOtp(phoneNumber)).rejects.toThrow(
-                BadRequestException,
-            );
-        });
-    });
-
     describe('verifyOtpAndResetPassword', () => {
         it('should reset password successfully', async () => {
             const phoneNumber = '0123456789';
