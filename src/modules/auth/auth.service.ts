@@ -30,7 +30,7 @@ export class AuthService {
     const hashedPassword = await hashPassword(password);
 
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    const otpExpiry = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
+    const otpExpiry = new Date(Date.now() + 5 * 60 * 1000);
 
     const newUser = await this.userModel.create({
       phoneNumber,
@@ -46,6 +46,7 @@ export class AuthService {
 
     return {
       message: 'Đăng ký thành công. Vui lòng kiểm tra mã OTP để kích hoạt tài khoản.',
+      otp: otp,
       _id: newUser._id,
     };
   }
@@ -194,34 +195,7 @@ export class AuthService {
     return { message: 'Kích hoạt tài khoản thành công' };
   }
 
-  async resendVerificationOtp(phoneNumber: string) {
-    const user = await this.userModel.findOne({ phoneNumber });
-
-    if (!user) {
-      throw new BadRequestException('Số điện thoại không tồn tại');
-    }
-
-    if (user.isActive) {
-      throw new BadRequestException('Tài khoản đã được kích hoạt');
-    }
-
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    const otpExpiry = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
-
-    await this.userModel.updateOne(
-      { _id: user._id },
-      {
-        verificationOtp: otp,
-        otpExpiry: otpExpiry,
-      },
-    );
-
-    console.log(`[OTP] Resend verification OTP for ${phoneNumber}: ${otp}`);
-
-    return { message: 'Mã OTP đã được gửi lại' };
-  }
-
-  async requestPasswordResetOtp(phoneNumber: string) {
+  async requestOtp(phoneNumber: string) {
     const user = await this.userModel.findOne({ phoneNumber });
 
     if (!user) {

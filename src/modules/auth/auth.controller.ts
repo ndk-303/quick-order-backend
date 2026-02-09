@@ -41,6 +41,7 @@ export class AuthController {
       type: 'object',
       properties: {
         message: { type: 'string', example: 'Đăng ký thành công. Vui lòng kiểm tra mã OTP để kích hoạt tài khoản.' },
+        otp: { type: 'string', example: '123456', description: 'ONLY FOR TESTING - Remove in production' },
         _id: { type: 'string', example: '507f1f77bcf86cd799439011' }
       }
     }
@@ -167,7 +168,39 @@ export class AuthController {
     return { message: 'Logged out successfully' };
   }
 
-  // ===== ACCOUNT VERIFICATION =====
+  @Public()
+  @Post('request-otp')
+  @ApiOperation({
+    summary: 'Yêu cầu mã OTP',
+    description: 'Gửi mã OTP đến số điện thoại để xác thực tài khoản hoặc đặt lại mật khẩu  '
+  })
+  @ApiBody({ type: RequestOtpDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Mã OTP đã được gửi',
+    schema: {
+      type: 'object',
+      properties: {
+        message: { type: 'string', example: 'Mã OTP đã được gửi đến số điện thoại của bạn' },
+        otp: { type: 'string', example: '123456', description: 'ONLY FOR TESTING - Remove in production' }
+      }
+    }
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Số điện thoại không tồn tại',
+    schema: {
+      type: 'object',
+      properties: {
+        statusCode: { type: 'number', example: 400 },
+        message: { type: 'string', example: 'Số điện thoại không tồn tại' }
+      }
+    }
+  })
+  async requestOtp(@Body() body: RequestOtpDto) {
+    return this.authService.requestOtp(body.phoneNumber);
+  }
+
   @Public()
   @Post('verify-account')
   @ApiOperation({
@@ -201,72 +234,6 @@ export class AuthController {
       verifyAccountDto.phoneNumber,
       verifyAccountDto.otp,
     );
-  }
-
-  @Public()
-  @Post('resend-verification-otp')
-  @ApiOperation({
-    summary: 'Gửi lại mã OTP kích hoạt',
-    description: 'Gửi lại mã OTP để kích hoạt tài khoản'
-  })
-  @ApiBody({ type: ResendOtpDto })
-  @ApiResponse({
-    status: 200,
-    description: 'Mã OTP đã được gửi lại',
-    schema: {
-      type: 'object',
-      properties: {
-        message: { type: 'string', example: 'Mã OTP đã được gửi lại' }
-      }
-    }
-  })
-  @ApiResponse({
-    status: 400,
-    description: 'Tài khoản không tồn tại hoặc đã được kích hoạt',
-    schema: {
-      type: 'object',
-      properties: {
-        statusCode: { type: 'number', example: 400 },
-        message: { type: 'string', example: 'Tài khoản đã được kích hoạt' }
-      }
-    }
-  })
-  async resendVerificationOtp(@Body() resendOtpDto: ResendOtpDto) {
-    return this.authService.resendVerificationOtp(resendOtpDto.phoneNumber);
-  }
-
-  // ===== FORGOT PASSWORD - OTP Flow =====
-  @Public()
-  @Post('forgot-password/request-otp')
-  @ApiOperation({
-    summary: 'Yêu cầu mã OTP đặt lại mật khẩu',
-    description: 'Gửi mã OTP đến số điện thoại để đặt lại mật khẩu'
-  })
-  @ApiBody({ type: RequestOtpDto })
-  @ApiResponse({
-    status: 200,
-    description: 'Mã OTP đã được gửi',
-    schema: {
-      type: 'object',
-      properties: {
-        message: { type: 'string', example: 'Mã OTP đã được gửi đến số điện thoại của bạn' },
-        otp: { type: 'string', example: '123456', description: 'ONLY FOR TESTING - Remove in production' }
-      }
-    }
-  })
-  @ApiResponse({
-    status: 400,
-    description: 'Số điện thoại không tồn tại',
-    schema: {
-      type: 'object',
-      properties: {
-        statusCode: { type: 'number', example: 400 },
-        message: { type: 'string', example: 'Số điện thoại không tồn tại' }
-      }
-    }
-  })
-  async requestOtp(@Body() body: RequestOtpDto) {
-    return this.authService.requestPasswordResetOtp(body.phoneNumber);
   }
 
   @Public()
