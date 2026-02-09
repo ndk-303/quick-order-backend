@@ -63,4 +63,5 @@ docker-compose.dev.yml
 docker-compose.prod.yml
 .dockerignore
 .env.docker.example
+.Dockerfile
 DOCKER_README.md
