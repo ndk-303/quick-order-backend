@@ -1,11 +1,15 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, Length } from 'class-validator';
+import { Transform } from 'class-transformer';
+import { IsNotEmpty, IsPhoneNumber, Length, Matches } from 'class-validator';
 
 export class VerifyAccountDto {
     @ApiProperty({
         description: 'Số điện thoại đã đăng ký',
         example: '0901234567',
     })
+    @IsPhoneNumber('VN', { message: 'Số điện thoại không hợp lệ (ví dụ: 0901234567)' })
+    @Matches(/^\S*$/, { message: 'Số điện thoại không được chứa khoảng trắng' })
+    @Transform(({ value }) => value?.trim())
     @IsNotEmpty({ message: 'Số điện thoại không được để trống' })
     phoneNumber: string;
 
@@ -25,6 +29,9 @@ export class ResendOtpDto {
         description: 'Số điện thoại cần gửi lại OTP',
         example: '0901234567',
     })
+    @IsPhoneNumber('VN', { message: 'Số điện thoại không hợp lệ (ví dụ: 0901234567)' })
+    @Matches(/^\S*$/, { message: 'Số điện thoại không được chứa khoảng trắng' })
+    @Transform(({ value }) => value?.trim())
     @IsNotEmpty({ message: 'Số điện thoại không được để trống' })
     phoneNumber: string;
 }

@@ -290,7 +290,6 @@ export class AuthController {
     return 'OK';
   }
 
-  // ===== GOOGLE OAUTH =====
   @Public()
   @Get('google')
   @UseGuards(AuthGuard('google'))

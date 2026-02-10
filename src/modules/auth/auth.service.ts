@@ -56,7 +56,7 @@ export class AuthService {
 
     const user = await this.userModel
       .findOne({ phoneNumber })
-      .select('_id fullName email phoneNumber password role restaurantId authProviders isVerified');
+      .select('_id fullName email phoneNumber password role restaurantId authProviders isActive');
 
     if (!user) {
       throw new UnauthorizedException('Số điện thoại hoặc mật khẩu không đúng');
