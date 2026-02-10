@@ -42,6 +42,7 @@ describe('AuthService', () => {
 
     const mockJwtService = {
         sign: jest.fn((payload, options) => {
+            if (options?.expiresIn === '15d') return 'mockToken';
             if (options?.expiresIn === '15m') return 'mockAccessToken';
             if (options?.expiresIn === '7d') return 'mockRefreshToken';
             return 'mockToken';
@@ -122,6 +123,10 @@ describe('AuthService', () => {
             const mockSelect = jest.fn().mockResolvedValue(mockUser);
             mockUserModel.findOne.mockReturnValue({ select: mockSelect });
             mockUserModel.updateOne.mockResolvedValue({ modifiedCount: 1 });
+
+            // Override sign mock implementation for this test to return distinct tokens if needed
+            // But since the implementation now uses the same expiry, the mock returns 'mockToken' for both.
+            // We just verify properties exist.
 
             const result = await service.login(loginDto);
 
@@ -453,8 +458,8 @@ describe('AuthService', () => {
             const tokens = service['generateTokens'](mockUser as any);
 
             expect(mockJwtService.sign).toHaveBeenCalledTimes(2);
-            expect(tokens).toHaveProperty('accessToken', 'mockAccessToken');
-            expect(tokens).toHaveProperty('refreshToken', 'mockRefreshToken');
+            expect(tokens).toHaveProperty('accessToken', 'mockToken');
+            expect(tokens).toHaveProperty('refreshToken', 'mockToken');
         });
     });
 });

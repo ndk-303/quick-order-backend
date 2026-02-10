@@ -148,11 +148,11 @@ export class AuthService {
     };
 
     const accessToken = this.jwtService.sign(payload, {
-      expiresIn: '30d',
+      expiresIn: '15d',
     });
 
     const refreshToken = this.jwtService.sign(payload, {
-      expiresIn: '30d',
+      expiresIn: '15d',
     });
 
     return { accessToken, refreshToken };
