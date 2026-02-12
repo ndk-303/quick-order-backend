@@ -7,9 +7,38 @@ import {
   IsString,
   IsOptional,
   ArrayMinSize,
+  MaxLength,
+  Matches,
+  Min,
+  IsInt,
+  Max,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+
+class SelectedOptionDto {
+  @ApiProperty({
+    description: 'Tên tùy chọn',
+    example: 'Size L',
+    type: String,
+    maxLength: 100,
+  })
+  @IsString()
+  @MaxLength(100, { message: 'Tên tùy chọn không được vượt quá 100 ký tự' })
+  @IsNotEmpty({ message: 'Tên tùy chọn không được để trống' })
+  name: string;
+
+  @ApiProperty({
+    description: 'Giá tùy chọn',
+    example: 5000,
+    type: Number,
+    minimum: 0,
+  })
+  @IsNumber()
+  @Min(0, { message: 'Giá tùy chọn phải lớn hơn hoặc bằng 0' })
+  @IsNotEmpty({ message: 'Giá tùy chọn không được để trống' })
+  price: number;
+}
 
 class OrderItemDto {
   @ApiProperty({
@@ -26,9 +55,13 @@ class OrderItemDto {
     example: 2,
     type: Number,
     minimum: 1,
+    maximum: 50,
   })
   @IsNumber()
-  @IsNotEmpty()
+  @IsInt({ message: 'Số lượng phải là số nguyên' })
+  @Min(1, { message: 'Số lượng phải lớn hơn hoặc bằng 1' })
+  @Max(50, { message: 'Số lượng không được vượt quá 50' })
+  @IsNotEmpty({ message: 'Số lượng không được để trống' })
   quantity: number;
 
   @ApiPropertyOptional({
@@ -37,26 +70,24 @@ class OrderItemDto {
       { name: 'Size L', price: 5000 },
       { name: 'Extra cheese', price: 10000 }
     ],
-    type: 'array',
-    items: {
-      type: 'object',
-      properties: {
-        name: { type: 'string' },
-        price: { type: 'number' }
-      }
-    }
+    type: [SelectedOptionDto],
   })
   @IsArray()
   @IsOptional()
-  selectedOptions: { name: string; price: number }[];
+  @ValidateNested({ each: true })
+  @Type(() => SelectedOptionDto)
+  selectedOptions: SelectedOptionDto[];
 
   @ApiPropertyOptional({
     description: 'Ghi chú cho món ăn',
     example: 'Không hành, ít cay',
     type: String,
+    maxLength: 500,
   })
   @IsString()
   @IsOptional()
+  @MaxLength(500, { message: 'Ghi chú không được vượt quá 500 ký tự' })
+  @Matches(/^[^<>'";\\/]*$/, { message: 'Ghi chú không được chứa ký tự đặc biệt' })
   note: string;
 }
 
@@ -96,7 +127,7 @@ export class CreateOrderDto {
     type: Number,
   })
   @IsNumber()
-  @IsNotEmpty()
+  @IsOptional()
   lat: number;
 
   @ApiProperty({
@@ -105,6 +136,6 @@ export class CreateOrderDto {
     type: Number,
   })
   @IsNumber()
-  @IsNotEmpty()
+  @IsOptional()
   long: number;
 }

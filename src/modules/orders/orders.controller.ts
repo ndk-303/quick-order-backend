@@ -76,6 +76,16 @@ export class OrdersController {
                 name: { type: 'string', example: 'Phở bò' },
                 price: { type: 'number', example: 65000 },
                 quantity: { type: 'number', example: 2 },
+                selectedOptions: {
+                  type: 'array',
+                  items: {
+                    type: 'object',
+                    properties: {
+                      name: { type: 'string', example: 'Size L' },
+                      price: { type: 'number', example: 5000 }
+                    }
+                  }
+                },
                 status: { type: 'string', enum: ['PENDING', 'COOKING', 'COMPLETED', 'CANCELED'], example: 'COOKING' },
                 category: { type: 'string', enum: ['FOOD', 'DRINK', 'DESSERT'], example: 'FOOD' }
               }
@@ -138,6 +148,16 @@ export class OrdersController {
                 name: { type: 'string', example: 'Cơm gà' },
                 price: { type: 'number', example: 45000 },
                 quantity: { type: 'number', example: 1 },
+                selectedOptions: {
+                  type: 'array',
+                  items: {
+                    type: 'object',
+                    properties: {
+                      name: { type: 'string' },
+                      price: { type: 'number' }
+                    }
+                  }
+                },
                 status: { type: 'string', enum: ['PENDING', 'COOKING'], example: 'PENDING' },
                 category: { type: 'string', enum: ['FOOD', 'DRINK', 'DESSERT'], example: 'FOOD' },
                 note: { type: 'string', example: 'Không hành' }

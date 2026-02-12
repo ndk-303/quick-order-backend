@@ -53,13 +53,13 @@ export class AuthService {
 
   async login(loginDto: LoginDto) {
     const { phoneNumber, password } = loginDto;
-
+    console.log(phoneNumber, password);
     const user = await this.userModel
       .findOne({ phoneNumber })
       .select('_id fullName email phoneNumber password role restaurantId authProviders isActive');
 
     if (!user) {
-      throw new UnauthorizedException('Số điện thoại hoặc mật khẩu không đúng');
+      throw new UnauthorizedException('Số điện thoại không đúng');
     }
 
     if (!user.password) {
@@ -67,8 +67,9 @@ export class AuthService {
     }
 
     const checkedPassword = await comparePassword(password, user.password);
+    console.log(checkedPassword);
     if (!checkedPassword) {
-      throw new UnauthorizedException('Số điện thoại hoặc mật khẩu không đúng');
+      throw new UnauthorizedException('Mật khẩu không đúng');
     }
 
     if (!user.isActive) {

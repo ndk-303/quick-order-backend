@@ -33,6 +33,9 @@ export class InvoiceItemSnapshot {
     @Prop({ required: true })
     quantity: number;
 
+    @Prop({ type: Array, default: [] })
+    selectedOptions: { name: string; price: number }[];
+
     @Prop()
     note: string;
 

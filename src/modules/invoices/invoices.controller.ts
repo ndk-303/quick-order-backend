@@ -34,6 +34,16 @@ export class InvoicesController {
                             name: { type: 'string', example: 'Phở bò' },
                             price: { type: 'number', example: 65000 },
                             quantity: { type: 'number', example: 2 },
+                            selectedOptions: {
+                                type: 'array',
+                                items: {
+                                    type: 'object',
+                                    properties: {
+                                        name: { type: 'string', example: 'Size L' },
+                                        price: { type: 'number', example: 5000 }
+                                    }
+                                }
+                            },
                             note: { type: 'string', example: 'Không hành' },
                             category: { type: 'string', enum: ['FOOD', 'DRINK', 'DESSERT'], example: 'FOOD' }
                         }
@@ -119,6 +129,16 @@ export class InvoicesController {
                             name: { type: 'string' },
                             price: { type: 'number' },
                             quantity: { type: 'number' },
+                            selectedOptions: {
+                                type: 'array',
+                                items: {
+                                    type: 'object',
+                                    properties: {
+                                        name: { type: 'string' },
+                                        price: { type: 'number' }
+                                    }
+                                }
+                            },
                             note: { type: 'string' },
                             category: { type: 'string', enum: ['FOOD', 'DRINK', 'DESSERT'] }
                         }

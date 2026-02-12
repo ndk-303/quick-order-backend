@@ -8,6 +8,7 @@ export type MenuItemDocument = MenuItem & Document;
 class MenuItemOption {
   @Prop() name: string; // VD: Size, Topping
   @Prop() price: number;
+  @Prop({ default: true }) isActive: boolean;
 }
 
 class MenuItemConfig {

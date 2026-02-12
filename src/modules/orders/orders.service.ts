@@ -51,13 +51,20 @@ export class OrdersService {
       throw new BadRequestException('Bàn không hợp lệ!');
     }
 
-    if (!table.isActive) {
+    const existingOrders = await this.orderModel.find({
+      userId: new Types.ObjectId(userId),
+      tableId: new Types.ObjectId(tableId)
+    });
+    console.log(existingOrders);
+    // Allow order if table is active OR user already has active orders on this table
+    if (!table.isActive && !existingOrders) {
       throw new BadRequestException('Bàn không hoạt động!');
     }
 
     const menuItemIds = items.map((item) => item.menuItemId);
     const menuItems = await this.menuItemModel.find({
       _id: { $in: menuItemIds },
+      isAvailable: true,
     });
 
     const menuItemMap = new Map(
@@ -72,6 +79,43 @@ export class OrdersService {
         throw new BadRequestException(
           `Món ăn với ID ${itemDto.menuItemId} không tồn tại`
         );
+      }
+
+      // Validate selected options
+      if (itemDto.selectedOptions && itemDto.selectedOptions.length > 0) {
+        // Check if menu item supports options
+        if (!dbItem.options || dbItem.options.length === 0) {
+          throw new BadRequestException(
+            `Món ăn "${dbItem.name}" không hỗ trợ tùy chọn`
+          );
+        }
+
+        // 1. Check for duplicate options
+        const optionNames = itemDto.selectedOptions.map(opt => opt.name);
+        const uniqueNames = new Set(optionNames);
+        if (optionNames.length !== uniqueNames.size) {
+          throw new BadRequestException('Không được chọn trùng lặp tùy chọn');
+        }
+
+        // 2. Validate each option exists and is active
+        const availableOptions = dbItem.options.flatMap(config => config.options);
+        for (const selectedOpt of itemDto.selectedOptions) {
+          const matchedOption = availableOptions.find(
+            opt => opt.name === selectedOpt.name && opt.price === selectedOpt.price
+          );
+
+          if (!matchedOption) {
+            throw new BadRequestException(
+              `Tùy chọn "${selectedOpt.name}" không tồn tại cho món này`
+            );
+          }
+
+          if (!matchedOption.isActive) {
+            throw new BadRequestException(
+              `Tùy chọn "${selectedOpt.name}" hiện không khả dụng`
+            );
+          }
+        }
       }
 
       const optionsPrice = itemDto.selectedOptions?.reduce(
@@ -102,6 +146,10 @@ export class OrdersService {
       totalAmount,
       status: OrderStatus.PENDING,
     });
+
+    if (existingOrders.length === 0) {
+      await this.tableModel.findByIdAndUpdate(tableId, { isActive: false });
+    }
 
     const order = await this.orderModel
       .findById(newOrder._id)
@@ -230,6 +278,9 @@ export class OrdersService {
     });
 
     const savedOrder = await newOrder.save();
+
+    // Update table status to inactive (occupied)
+    await this.tableModel.findByIdAndUpdate(invoice.tableId, { isActive: false });
 
     const populatedOrder = await this.orderModel
       .findById(savedOrder._id)
