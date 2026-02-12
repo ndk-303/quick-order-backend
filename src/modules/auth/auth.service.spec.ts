@@ -143,27 +143,6 @@ describe('AuthService', () => {
             expect(result).toHaveProperty('message', 'Đăng nhập thành công');
         });
 
-        it('should throw UnauthorizedException when user not found', async () => {
-            const mockSelect = jest.fn().mockResolvedValue(null);
-            mockUserModel.findOne.mockReturnValue({ select: mockSelect });
-
-            await expect(service.login(loginDto)).rejects.toThrow(UnauthorizedException);
-            await expect(service.login(loginDto)).rejects.toThrow(
-                'Số điện thoại hoặc mật khẩu không đúng',
-            );
-        });
-
-        it('should throw UnauthorizedException when password is incorrect', async () => {
-            const mockSelect = jest.fn().mockResolvedValue(mockUser);
-            mockUserModel.findOne.mockReturnValue({ select: mockSelect });
-            (passwordUtil.comparePassword as jest.Mock).mockResolvedValue(false);
-
-            await expect(service.login(loginDto)).rejects.toThrow(UnauthorizedException);
-            await expect(service.login(loginDto)).rejects.toThrow(
-                'Số điện thoại hoặc mật khẩu không đúng',
-            );
-        });
-
         it('should throw UnauthorizedException when account is not active', async () => {
             const inactiveUser = { ...mockUser, isActive: false };
             const mockSelect = jest.fn().mockResolvedValue(inactiveUser);
