@@ -1,7 +1,8 @@
-import { Controller, Get, Post, Body, Param, Req } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Req, UseGuards } from '@nestjs/common';
 import { InvoicesService } from './invoices.service';
 import { CreateInvoiceDto } from './dto/create-invoice.dto';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam, ApiBody } from '@nestjs/swagger';
+import { GeoFencingGuard } from 'src/common/guards/geocoding.guard';
 
 @ApiTags('Invoices')
 @Controller('invoices')
@@ -9,6 +10,7 @@ export class InvoicesController {
     constructor(private readonly invoicesService: InvoicesService) { }
 
     @Post()
+    @UseGuards(GeoFencingGuard)
     @ApiBearerAuth('JWT')
     @ApiOperation({
         summary: 'Tạo hóa đơn mới',

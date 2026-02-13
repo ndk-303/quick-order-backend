@@ -127,7 +127,7 @@ export class CreateOrderDto {
     type: Number,
   })
   @IsNumber()
-  @IsOptional()
+  @IsNotEmpty({ message: 'Thiếu vĩ độ' })
   lat: number;
 
   @ApiProperty({
@@ -136,6 +136,6 @@ export class CreateOrderDto {
     type: Number,
   })
   @IsNumber()
-  @IsOptional()
+  @IsNotEmpty({ message: 'Thiếu kinh độ' })
   long: number;
 }

@@ -13,6 +13,7 @@ import {
   FileTypeValidator,
   Req,
   Query,
+  UseGuards,
 } from '@nestjs/common';
 import { MenusService } from './menus.service';
 import { CreateMenuItemDto } from './dto/create-menu-item.dto';
@@ -23,6 +24,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { Public } from 'src/common/decorators/public.decorator';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiConsumes, ApiParam, ApiQuery } from '@nestjs/swagger';
 import { CacheInterceptor, CacheTTL } from '@nestjs/cache-manager';
+import { GeoFencingGuard } from 'src/common/guards/geocoding.guard';
 
 @ApiTags('Menus')
 @Controller('menus')
@@ -188,10 +190,12 @@ export class MenusController {
   @ApiResponse({ status: 400, description: 'Bad request - Invalid table or table is inactive' })
   @ApiResponse({ status: 404, description: 'Restaurant or table not found' })
   @UseInterceptors(CacheInterceptor)
-  @CacheTTL(300000) // 5 minutes - critical endpoint, high traffic
+  @CacheTTL(300000)
+  @UseGuards(GeoFencingGuard)
   async getMenuForGuest(
     @Param('restaurantId') restaurantId: string,
     @Param('tableId') tableId: string,
+    @Body() body: { lat: number, long: number },
     @Query() filters: MenuFilterDto,
   ) {
     return this.menusService.getMenuForClient(restaurantId, tableId, filters);

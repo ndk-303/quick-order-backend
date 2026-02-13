@@ -1,10 +1,11 @@
-import { Controller, Post, Body, Get, Param, Patch, Req, Query } from '@nestjs/common';
+import { Controller, Post, Body, Get, Param, Patch, Req, Query, UseGuards } from '@nestjs/common';
 import { OrdersService } from './orders.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderItemStatusDto } from './dto/update-item.dto';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam, ApiQuery } from '@nestjs/swagger';
 import { Public } from 'src/common/decorators/public.decorator';
 import { MenuCategory } from 'src/common/enums/menu-category';
+import { GeoFencingGuard } from 'src/common/guards/geocoding.guard';
 
 @ApiTags('Orders')
 @Controller('orders')
@@ -12,6 +13,7 @@ export class OrdersController {
   constructor(private readonly ordersService: OrdersService) { }
 
   @Post()
+  @UseGuards(GeoFencingGuard)
   @ApiBearerAuth('JWT')
   @ApiOperation({
     summary: 'Tạo đơn hàng mới',

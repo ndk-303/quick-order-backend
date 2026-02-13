@@ -7,6 +7,7 @@ import { MenuItem, MenuItemSchema } from '../menus/schemas/menu-item.schema';
 import { Table, TableSchema } from '../tables/schemas/table.schema';
 import { Restaurant, RestaurantSchema } from '../restaurants/schemas/restaurant.schema';
 import { Order, OrderSchema } from '../orders/schemas/order.schema';
+import { RestaurantsModule } from '../restaurants/restaurants.module';
 
 @Module({
     imports: [
@@ -17,6 +18,7 @@ import { Order, OrderSchema } from '../orders/schemas/order.schema';
             { name: Restaurant.name, schema: RestaurantSchema },
             { name: Order.name, schema: OrderSchema },
         ]),
+        RestaurantsModule,
     ],
     controllers: [InvoicesController],
     providers: [InvoicesService],

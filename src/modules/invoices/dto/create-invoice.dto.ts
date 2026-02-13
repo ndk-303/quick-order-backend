@@ -139,5 +139,23 @@ export class CreateInvoiceDto {
     @ArrayMinSize(1)
     @Type(() => InvoiceItemDto)
     items: InvoiceItemDto[];
+
+    @ApiProperty({
+        description: 'Vĩ độ của vị trí khách hàng',
+        example: 10.8231,
+        type: Number,
+    })
+    @IsNumber()
+    @IsNotEmpty({ message: 'Thiếu vĩ độ' })
+    lat: number;
+
+    @ApiProperty({
+        description: 'Kinh độ của vị trí khách hàng',
+        example: 106.6297,
+        type: Number,
+    })
+    @IsNumber()
+    @IsNotEmpty({ message: 'Thiếu kinh độ' })
+    long: number;
 }
 

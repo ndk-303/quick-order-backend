@@ -11,14 +11,14 @@ import { GeoUtils } from '../utils/geo.util';
 
 @Injectable()
 export class GeoFencingGuard implements CanActivate {
-  constructor(private readonly restaurantsService: RestaurantsService) {}
+  constructor(private readonly restaurantsService: RestaurantsService) { }
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<Request>();
 
     let lat: number;
     let long: number;
-    let restaurant_id: string;
+    let restaurantId: string;
 
     if (request.method === 'GET') {
       const latQuery = request.query.lat as string;
@@ -27,7 +27,7 @@ export class GeoFencingGuard implements CanActivate {
       lat = parseFloat(latQuery);
       long = parseFloat(longQuery);
 
-      restaurant_id = (request.params.restaurantId ||
+      restaurantId = (request.params.restaurantId ||
         request.query.restaurant_id) as string;
     } else {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
@@ -35,18 +35,18 @@ export class GeoFencingGuard implements CanActivate {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
       long = request.body.long;
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
-      restaurant_id = request.body.restaurant_id;
+      restaurantId = request.body.restaurant_id;
     }
 
     if (!lat || !long || isNaN(lat) || isNaN(long)) {
       throw new BadRequestException('Vui lòng bật định vị (GPS) hợp lệ.');
     }
 
-    if (!restaurant_id) {
+    if (!restaurantId) {
       throw new BadRequestException('Thiếu thông tin nhà hàng.');
     }
 
-    const restaurant = await this.restaurantsService.findById(restaurant_id);
+    const restaurant = await this.restaurantsService.findById(restaurantId);
 
     if (!restaurant) {
       throw new BadRequestException('Nhà hàng không tồn tại.');
