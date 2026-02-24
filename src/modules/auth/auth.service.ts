@@ -91,6 +91,8 @@ export class AuthService {
         fullName: user.fullName,
         email: user.email,
         phoneNumber: user.phoneNumber,
+        role: user.role,
+        restaurantId: user.restaurantId,
         authProviders: user.authProviders,
       },
       message: 'Đăng nhập thành công',
@@ -132,6 +134,8 @@ export class AuthService {
           fullName: user.fullName,
           email: user.email,
           phoneNumber: user.phoneNumber,
+          role: user.role,
+          restaurantId: user.restaurantId,
           authProviders: user.authProviders,
         },
       };

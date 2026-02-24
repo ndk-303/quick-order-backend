@@ -6,6 +6,7 @@ import {
   ArrayMinSize,
   ArrayMaxSize,
 } from 'class-validator';
+import { Transform } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateRestaurantDto {
@@ -33,6 +34,16 @@ export class CreateRestaurantDto {
     type: [Number],
     minItems: 2,
     maxItems: 2,
+  })
+  @Transform(({ value }) => {
+    if (typeof value === 'string') {
+      try {
+        return JSON.parse(value);
+      } catch (error) {
+        return value;
+      }
+    }
+    return value;
   })
   @IsArray()
   @ArrayMinSize(2)

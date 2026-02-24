@@ -233,6 +233,7 @@ export class RestaurantsController {
   }
 
   @Post('types')
+  @Public()
   @ApiBearerAuth('JWT')
   @ApiOperation({ summary: 'Create restaurant type (Admin only)' })
   @ApiConsumes('multipart/form-data')

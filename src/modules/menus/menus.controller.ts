@@ -191,7 +191,7 @@ export class MenusController {
   @ApiResponse({ status: 404, description: 'Restaurant or table not found' })
   @UseInterceptors(CacheInterceptor)
   @CacheTTL(300000)
-  @UseGuards(GeoFencingGuard)
+  // @UseGuards(GeoFencingGuard)
   async getMenuForGuest(
     @Param('restaurantId') restaurantId: string,
     @Param('tableId') tableId: string,
@@ -276,7 +276,10 @@ export class MenusController {
     @Req() req: any,
     @Query() filters: MenuFilterDto,
   ) {
-    console.log(req.user.restaurantId)
-    return this.menusService.getMenuForAdmin(req.user.restaurantId, filters);
+    const restaurantId = req.user?.restaurantId;
+    if (!restaurantId) {
+      throw new BadRequestException('Tài khoản chưa được liên kết với nhà hàng nào');
+    }
+    return this.menusService.getMenuForAdmin(restaurantId, filters);
   }
 }

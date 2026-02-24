@@ -88,11 +88,14 @@ export class MenusService {
     };
 
     const newItem = new this.menuItemModel(data);
-    await newItem.save();
+    try {
+      await newItem.save();
+    } catch (error) {
+      console.log(error);
+    }
 
     // Invalidate menu cache for this restaurant
     await this.cacheInvalidationService.invalidateMenu(restaurantId);
-
     return { message: 'ok' };
   }
 

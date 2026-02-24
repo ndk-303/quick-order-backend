@@ -163,10 +163,18 @@ export class InvoicesService {
         const invoices = await this.invoiceModel
             .find({ userId: new Types.ObjectId(userId), status: InvoiceStatus.PAID })
             .populate('restaurantId', 'name address')
-            .sort({ createdAt: -1 }) // Newest first
+            .sort({ createdAt: -1 })
             .exec();
-        console.log(invoices);
         return invoices;
+    }
+
+    async findByRestaurant(restaurantId: string) {
+        return this.invoiceModel
+            .find({ restaurantId: new Types.ObjectId(restaurantId) })
+            .populate('tableId', 'name')
+            .populate('userId', 'fullName email')
+            .sort({ createdAt: -1 })
+            .exec();
     }
 }
 

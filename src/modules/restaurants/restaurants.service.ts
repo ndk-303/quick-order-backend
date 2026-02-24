@@ -31,13 +31,13 @@ export class RestaurantsService {
   ) { }
 
   async create(createRestaurantDto: CreateRestaurantDto): Promise<Restaurant> {
-    const restaurantType = await this.restaurantModel.findOne({
+    const restaurantType = await this.restaurantTypeModel.findOne({
       slug: createRestaurantDto.type,
     });
-
+    console.log(restaurantType);
     if (!restaurantType)
       throw new BadRequestException('Không có loại nhà hàng này');
-
+    console.log(createRestaurantDto);
     const newRestaurant = new this.restaurantModel({
       ...createRestaurantDto,
       location: {

@@ -8,7 +8,7 @@ import {
   IsOptional,
 } from 'class-validator';
 
-import { Type } from 'class-transformer';
+import { Type, Transform } from 'class-transformer';
 
 class MenuItemOptionDto {
   @IsString()
@@ -51,8 +51,22 @@ export class CreateMenuItemDto {
   @IsNotEmpty()
   category: string;
 
+  @IsBoolean()
+  @IsOptional()
+  isAvailable?: boolean;
+
   @IsArray()
   @IsOptional()
+  @Transform(({ value }) => {
+    if (typeof value === 'string') {
+      try {
+        return JSON.parse(value);
+      } catch (error) {
+        return value;
+      }
+    }
+    return value;
+  })
   @ValidateNested({ each: true })
   @Type(() => MenuItemConfigDto)
   options: MenuItemConfigDto[];

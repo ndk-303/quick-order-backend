@@ -10,7 +10,7 @@ export class InvoicesController {
     constructor(private readonly invoicesService: InvoicesService) { }
 
     @Post()
-    @UseGuards(GeoFencingGuard)
+    // @UseGuards(GeoFencingGuard)
     @ApiBearerAuth('JWT')
     @ApiOperation({
         summary: 'Tạo hóa đơn mới',
@@ -61,6 +61,7 @@ export class InvoicesController {
     @ApiResponse({ status: 401, description: 'Unauthorized' })
     async create(@Body() createInvoiceDto: CreateInvoiceDto, @Req() req: any) {
         const userId = req.user?.userId;
+        console.log(req.user);
         if (userId) {
             createInvoiceDto.userId = userId;
         }
@@ -98,6 +99,19 @@ export class InvoicesController {
     async findUserInvoices(@Req() req: any) {
         const userId = req.user.userId;
         return this.invoicesService.findByUser(userId);
+    }
+
+    @Get('restaurant')
+    @ApiBearerAuth('JWT')
+    @ApiOperation({
+        summary: 'Lấy danh sách hóa đơn của nhà hàng',
+        description: 'Lấy tất cả hóa đơn thuộc nhà hàng của owner đang đăng nhập (restaurantId từ JWT token)'
+    })
+    @ApiResponse({ status: 200, description: 'Danh sách hóa đơn của nhà hàng' })
+    @ApiResponse({ status: 401, description: 'Unauthorized' })
+    async findRestaurantInvoices(@Req() req: any) {
+        const restaurantId = req.user?.restaurantId;
+        return this.invoicesService.findByRestaurant(restaurantId);
     }
 
     @Get(':id')

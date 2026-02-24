@@ -102,14 +102,14 @@ class InvoiceItemDto {
 }
 
 export class CreateInvoiceDto {
-    @ApiProperty({
-        description: 'ID của người dùng (tự động lấy từ JWT token)',
+    @ApiPropertyOptional({
+        description: 'ID của người dùng (tự động lấy từ JWT token, không cần gửi từ client)',
         example: '507f1f77bcf86cd799439011',
         type: String
     })
     @IsMongoId()
-    @IsNotEmpty()
-    userId: string;
+    @IsOptional()
+    userId?: string;
 
     @ApiProperty({
         description: 'ID của nhà hàng',
@@ -140,22 +140,22 @@ export class CreateInvoiceDto {
     @Type(() => InvoiceItemDto)
     items: InvoiceItemDto[];
 
-    @ApiProperty({
-        description: 'Vĩ độ của vị trí khách hàng',
-        example: 10.8231,
-        type: Number,
-    })
-    @IsNumber()
-    @IsNotEmpty({ message: 'Thiếu vĩ độ' })
-    lat: number;
+    // @ApiProperty({
+    //     description: 'Vĩ độ của vị trí khách hàng',
+    //     example: 10.8231,
+    //     type: Number,
+    // })
+    // @IsNumber()
+    // @IsNotEmpty({ message: 'Thiếu vĩ độ' })
+    // lat: number;
 
-    @ApiProperty({
-        description: 'Kinh độ của vị trí khách hàng',
-        example: 106.6297,
-        type: Number,
-    })
-    @IsNumber()
-    @IsNotEmpty({ message: 'Thiếu kinh độ' })
-    long: number;
+    // @ApiProperty({
+    //     description: 'Kinh độ của vị trí khách hàng',
+    //     example: 106.6297,
+    //     type: Number,
+    // })
+    // @IsNumber()
+    // @IsNotEmpty({ message: 'Thiếu kinh độ' })
+    // long: number;
 }
 
