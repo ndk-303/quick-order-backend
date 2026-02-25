@@ -10,7 +10,7 @@ export class InvoicesController {
     constructor(private readonly invoicesService: InvoicesService) { }
 
     @Post()
-    // @UseGuards(GeoFencingGuard)
+    @UseGuards(GeoFencingGuard)
     @ApiBearerAuth('JWT')
     @ApiOperation({
         summary: 'Tạo hóa đơn mới',
