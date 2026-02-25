@@ -27,6 +27,5 @@ export class Table {
 
 export const TableSchema = SchemaFactory.createForClass(Table);
 
-// Index ghép để đảm bảo trong 1 quán không có 2 bàn trùng tên
 TableSchema.index({ restaurant: 1, name: 1 }, { unique: true });
 

@@ -7,6 +7,8 @@ import { MenuItem, MenuItemDocument } from '../menus/schemas/menu-item.schema';
 import { Table, TableDocument } from '../tables/schemas/table.schema';
 import { Restaurant, RestaurantDocument } from '../restaurants/schemas/restaurant.schema';
 import { Order, OrderDocument, OrderStatus } from '../orders/schemas/order.schema';
+import { SseService } from '../sse/sse.service';
+import { SseEventType } from 'src/common/interfaces/sse.interface';
 
 @Injectable()
 export class InvoicesService {
@@ -16,6 +18,7 @@ export class InvoicesService {
         @InjectModel(Table.name) private tableModel: Model<TableDocument>,
         @InjectModel(Restaurant.name) private restaurantModel: Model<RestaurantDocument>,
         @InjectModel(Order.name) private orderModel: Model<OrderDocument>,
+        private readonly sseService: SseService,
     ) { }
 
     async create(createInvoiceDto: CreateInvoiceDto) {
@@ -132,6 +135,20 @@ export class InvoicesService {
             status: InvoiceStatus.PENDING,
         });
 
+        // Populate for SSE payload
+        const populatedInvoice = await this.invoiceModel
+            .findById(newInvoice._id)
+            .populate('tableId', 'name')
+            .populate('userId', 'fullName email')
+            .exec();
+
+        this.sseService.emit({
+            type: SseEventType.INVOICE_CREATED,
+            restaurantId: restaurantId.toString(),
+            userId: userId?.toString(),
+            payload: populatedInvoice,
+        });
+
         return newInvoice;
     }
 
@@ -151,11 +168,21 @@ export class InvoicesService {
     async updateStatus(id: string, status: InvoiceStatus): Promise<InvoiceDocument> {
         const invoice = await this.invoiceModel
             .findByIdAndUpdate(id, { status }, { new: true })
+            .populate('tableId', 'name')
+            .populate('userId', 'fullName email')
             .exec();
 
         if (!invoice) {
             throw new NotFoundException(`Invoice #${id} not found`);
         }
+
+        this.sseService.emit({
+            type: SseEventType.INVOICE_STATUS_UPDATED,
+            restaurantId: invoice.restaurantId.toString(),
+            userId: invoice.userId?.toString(),
+            payload: invoice,
+        });
+
         return invoice;
     }
 

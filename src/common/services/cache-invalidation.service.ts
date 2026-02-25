@@ -23,13 +23,25 @@ export class CacheInvalidationService {
    * Note: This clears caches by pattern. In production, consider using Redis SCAN.
    */
     async invalidateMenu(restaurantId: string): Promise<void> {
-        // Clear common menu cache patterns
-        // Note: CacheManager's del() only removes exact keys
-        // For pattern-based deletion, you'll need direct Redis access
-        // For now, we'll clear the most common cache keys
+        // Delete admin menu cache (exact key based on CacheInterceptor URL)
+        await this.cacheManager.del('/api/menus');
 
-        // This is a simplified approach - in production, use Redis directly for pattern matching
-        console.log(`Invalidating menu cache for restaurant: ${restaurantId}`);
+        // Delete client menu caches for this restaurant (pattern-based)
+        // CacheInterceptor uses the full URL path as cache key
+        // e.g. /api/menus/{restaurantId}/{tableId}?filters...
+        try {
+            const store = (this.cacheManager as any).store;
+            if (store?.getClient) {
+                const client = store.getClient();
+                const pattern = `/api/menus/${restaurantId}/*`;
+                const keys = await client.keys(pattern);
+                if (keys.length > 0) {
+                    await client.del(keys);
+                }
+            }
+        } catch (error) {
+            console.warn('Failed to invalidate client menu cache by pattern:', error);
+        }
     }
 
     /**
