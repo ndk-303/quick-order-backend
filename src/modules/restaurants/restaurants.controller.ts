@@ -14,6 +14,8 @@ import {
   Query,
 } from '@nestjs/common';
 import { RestaurantsService } from './restaurants.service';
+import { RestaurantTypesService } from './restaurant-types.service';
+import { FavoritesService } from './favorites.service';
 import { CreateRestaurantDto } from './dto/create-restaurant.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { CloudinaryService } from 'src/common/services/cloudinary.service';
@@ -26,6 +28,8 @@ import { Public } from 'src/common/decorators/public.decorator';
 export class RestaurantsController {
   constructor(
     private readonly restaurantsService: RestaurantsService,
+    private readonly restaurantTypesService: RestaurantTypesService,
+    private readonly favoritesService: FavoritesService,
     private readonly cloudinaryService: CloudinaryService,
   ) { }
 
@@ -153,7 +157,7 @@ export class RestaurantsController {
   })
   @UseInterceptors(CacheInterceptor)
   async findAllTypes() {
-    return await this.restaurantsService.findAllTypes();
+    return this.restaurantTypesService.findAll();
   }
 
   @Get('favorites')
@@ -183,10 +187,11 @@ export class RestaurantsController {
   })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @UseInterceptors(CacheInterceptor)
-  @CacheTTL(300000) // 5 minutes - user favorites
+  @CacheTTL(300000)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async getFavorites(@Req() req: any) {
-    const userId = req.user.userId;
-    return this.restaurantsService.getFavorites(userId);
+    const userId = req.user.userId as string;
+    return this.favoritesService.getAll(userId);
   }
 
   @Public()
@@ -251,11 +256,7 @@ export class RestaurantsController {
   ) {
     if (file) {
       const imageUrl = await this.cloudinaryService.uploadRestaurantImage(file);
-      const data = {
-        name,
-        imageUrl,
-      };
-      return this.restaurantsService.createRestaurantType(data);
+      return this.restaurantTypesService.create({ name, imageUrl });
     } else {
       throw new BadRequestException('File ảnh không hợp lệ');
     }
@@ -287,9 +288,10 @@ export class RestaurantsController {
   })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 404, description: 'Nhà hàng không tìm thấy' })
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async addFavorite(@Param('restaurantId') restaurantId: string, @Req() req: any) {
-    const userId = req.user.userId;
-    return this.restaurantsService.addFavorite(userId, restaurantId);
+    const userId = req.user.userId as string;
+    return this.favoritesService.add(userId, restaurantId);
   }
 
   @Delete('favorites/:restaurantId')
@@ -314,9 +316,10 @@ export class RestaurantsController {
       }
     }
   })
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async removeFavorite(@Param('restaurantId') restaurantId: string, @Req() req: any) {
-    const userId = req.user.userId;
-    await this.restaurantsService.removeFavorite(userId, restaurantId);
+    const userId = req.user.userId as string;
+    await this.favoritesService.remove(userId, restaurantId);
     return { message: 'Đã xóa khỏi danh sách yêu thích' };
   }
 

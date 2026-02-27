@@ -18,6 +18,8 @@ import {
 } from './schemas/restaurant-review.schema';
 import { ReviewsService } from './reviews.service';
 import { ReviewsController } from './reviews.controller';
+import { RestaurantTypesService } from './restaurant-types.service';
+import { FavoritesService } from './favorites.service';
 
 @Module({
   imports: [
@@ -29,7 +31,13 @@ import { ReviewsController } from './reviews.controller';
     ]),
   ],
   controllers: [RestaurantsController, ReviewsController],
-  providers: [RestaurantsService, ReviewsService, CloudinaryService],
-  exports: [RestaurantsService, ReviewsService],
+  providers: [
+    RestaurantsService,
+    RestaurantTypesService,
+    FavoritesService,
+    ReviewsService,
+    CloudinaryService,
+  ],
+  exports: [RestaurantsService, RestaurantTypesService, FavoritesService, ReviewsService],
 })
 export class RestaurantsModule { }
