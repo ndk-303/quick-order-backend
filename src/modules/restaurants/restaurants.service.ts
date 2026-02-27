@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
@@ -21,6 +22,8 @@ import slugify from 'slugify';
 
 @Injectable()
 export class RestaurantsService {
+  private readonly logger = new Logger(RestaurantsService.name);
+
   constructor(
     @InjectModel(Restaurant.name)
     private restaurantModel: Model<RestaurantDocument>,
@@ -34,10 +37,9 @@ export class RestaurantsService {
     const restaurantType = await this.restaurantTypeModel.findOne({
       slug: createRestaurantDto.type,
     });
-    console.log(restaurantType);
     if (!restaurantType)
       throw new BadRequestException('Không có loại nhà hàng này');
-    console.log(createRestaurantDto);
+    this.logger.debug(`Creating restaurant: ${createRestaurantDto.name}`);
     const newRestaurant = new this.restaurantModel({
       ...createRestaurantDto,
       location: {

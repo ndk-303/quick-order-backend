@@ -1,17 +1,20 @@
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import { Injectable, BadRequestException, Logger, NotFoundException } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { InvoicesService } from '../invoices/invoices.service';
-import { OrdersService } from '../orders/orders.service';
 import { CreatePaymentDto } from './dto/create-payment.dto';
 import { InvoiceStatus, InvoiceDocument, PaymentMethod } from '../invoices/schemas/invoice.schema';
 import { ConfigService } from '@nestjs/config';
+import { InvoicePaidEvent } from 'src/common/events/invoice-paid.event';
 import * as crypto from 'crypto';
 import * as qs from 'qs';
 
 @Injectable()
 export class PaymentsService {
+    private readonly logger = new Logger(PaymentsService.name);
+
     constructor(
         private readonly invoicesService: InvoicesService,
-        private readonly ordersService: OrdersService,
+        private readonly eventEmitter: EventEmitter2,
         private readonly configService: ConfigService,
     ) { }
 
@@ -30,19 +33,16 @@ export class PaymentsService {
             };
         }
 
-        // For other methods (Cash, etc.) - simple instant completion for now
-        // Or if you have logic for others, keep it.
-        // Assuming original logic was for direct completion:
+        // For other methods (Cash, etc.) - simple instant completion
         invoice.status = InvoiceStatus.PAID;
         invoice.paymentMethod = method;
         await invoice.save();
 
-        const newOrder = await this.ordersService.createFromInvoice(invoice);
+        this.eventEmitter.emit('invoice.paid', new InvoicePaidEvent(invoice));
 
         return {
             success: true,
             message: 'Payment successful',
-            orderId: newOrder._id,
             invoiceId: invoice._id
         };
     }
@@ -109,11 +109,11 @@ export class PaymentsService {
                     return { code: '97', message: 'Fail' };
                 }
             } else {
-                console.error('Invalid signature - Expected:', signed, 'Received:', secureHash);
+                this.logger.warn(`Invalid VNPAY signature — invoiceId: ${vnp_Params['vnp_TxnRef']}`);
                 return { code: '97', message: 'Invalid Signature' };
             }
         } catch (error) {
-            console.error('Error in verifyReturnUrl:', error);
+            this.logger.error(`Error in verifyReturnUrl: ${error.message}`, error.stack);
             throw error;
         }
     }
@@ -167,7 +167,7 @@ export class PaymentsService {
             const invoice = await this.invoicesService.findOne(invoiceId);
 
             if (!invoice) {
-                console.error('Invoice not found:', invoiceId);
+                this.logger.warn(`completePayment: Invoice ${invoiceId} not found`);
                 throw new NotFoundException(`Invoice ${invoiceId} not found`);
             }
 
@@ -178,11 +178,12 @@ export class PaymentsService {
             invoice.status = InvoiceStatus.PAID;
             invoice.paymentMethod = method;
             await invoice.save();
-            await this.ordersService.createFromInvoice(invoice);
+
+            this.eventEmitter.emit('invoice.paid', new InvoicePaidEvent(invoice));
 
             return invoice;
         } catch (error) {
-            console.error('Error in completePayment:', error);
+            this.logger.error(`Error in completePayment: ${error.message}`, error.stack);
             throw error;
         }
     }

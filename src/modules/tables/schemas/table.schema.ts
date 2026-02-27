@@ -21,8 +21,7 @@ export class Table {
   @Prop({ type: String, required: false })
   qrImage: string;
 
-  @Prop({ default: true })
-  isActive: boolean;
+
 }
 
 export const TableSchema = SchemaFactory.createForClass(Table);

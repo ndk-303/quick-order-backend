@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   Injectable,
+  Logger,
   UnauthorizedException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
@@ -14,6 +15,8 @@ import { Payload } from 'src/common/interfaces/payload.interface';
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     @InjectModel(User.name) private userModel: Model<UserDocument>,
     private jwtService: JwtService,
@@ -42,18 +45,17 @@ export class AuthService {
       otpExpiry: otpExpiry,
     });
 
-    console.log(`[OTP] Registration OTP for ${phoneNumber}: ${otp}`);
+    this.logger.debug(`[OTP] Registration OTP for ${phoneNumber}: ${otp}`);
 
     return {
       message: 'Đăng ký thành công. Vui lòng kiểm tra mã OTP để kích hoạt tài khoản.',
-      otp: otp,
       _id: newUser._id,
     };
   }
 
   async login(loginDto: LoginDto) {
     const { phoneNumber, password } = loginDto;
-    console.log(phoneNumber, password);
+    this.logger.debug(`Login attempt for phone: ${phoneNumber}`);
     const user = await this.userModel
       .findOne({ phoneNumber })
       .select('_id fullName email phoneNumber password role restaurantId authProviders isActive');
@@ -67,7 +69,6 @@ export class AuthService {
     }
 
     const checkedPassword = await comparePassword(password, user.password);
-    console.log(checkedPassword);
     if (!checkedPassword) {
       throw new UnauthorizedException('Mật khẩu không đúng');
     }
@@ -145,7 +146,6 @@ export class AuthService {
   }
 
   private generateTokens(user: UserDocument) {
-    console.log(user);
     const payload = {
       sub: user._id.toString(),
       role: user.role,
@@ -153,11 +153,11 @@ export class AuthService {
     };
 
     const accessToken = this.jwtService.sign(payload, {
-      expiresIn: '15d',
+      expiresIn: '1h',
     });
 
     const refreshToken = this.jwtService.sign(payload, {
-      expiresIn: '15d',
+      expiresIn: '30d',
     });
 
     return { accessToken, refreshToken };
@@ -222,11 +222,10 @@ export class AuthService {
       },
     );
 
-    console.log(`[OTP] Resend verification OTP for ${phoneNumber}: ${otp}`);
+    this.logger.debug(`[OTP] Resend verification OTP for ${phoneNumber}: ${otp}`);
 
     return {
       message: 'Mã OTP đã được gửi lại',
-      otp: otp,
     };
   }
 
@@ -248,11 +247,10 @@ export class AuthService {
       },
     );
 
-    console.log(`[OTP] Password reset OTP for ${phoneNumber}: ${otp}`);
+    this.logger.debug(`[OTP] Password reset OTP for ${phoneNumber}: ${otp}`);
 
     return {
       message: 'Mã OTP đã được gửi đến số điện thoại của bạn',
-      otp: otp,
     };
   }
 
@@ -298,7 +296,7 @@ export class AuthService {
 
   async googleLogin(googleUser: any) {
     try {
-      console.log('Google login attempt for:', googleUser.email);
+      this.logger.debug(`Google login attempt for: ${googleUser.email}`);
 
       // Find user by googleId or email
       let user = await this.userModel.findOne({
@@ -309,7 +307,7 @@ export class AuthService {
       });
 
       if (!user) {
-        console.log('Creating new user from Google profile');
+        this.logger.debug('Creating new user from Google profile');
         // Create new user from Google profile
         user = await this.userModel.create({
           googleId: googleUser.id,
@@ -320,7 +318,7 @@ export class AuthService {
         });
       } else if (!user.googleId) {
         // Link Google account to existing user
-        console.log('Linking Google account to existing user');
+        this.logger.debug(`Linking Google account to existing user: ${user._id}`);
         user.googleId = googleUser.id;
         if (!user.email) {
           user.email = googleUser.email;
@@ -352,7 +350,7 @@ export class AuthService {
         },
       };
     } catch (error) {
-      console.error('Google login error:', error);
+      this.logger.error(`Google login error: ${error.message}`, error.stack);
       throw new BadRequestException('Đăng nhập Google thất bại: ' + error.message);
     }
   }

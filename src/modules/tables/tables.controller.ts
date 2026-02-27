@@ -39,7 +39,6 @@ export class TablesController {
         restaurant: { type: 'string', example: '507f1f77bcf86cd799439012' },
         token: { type: 'string', example: 'abc123xyz' },
         qrImage: { type: 'string', example: 'https://res.cloudinary.com/...' },
-        isActive: { type: 'boolean', example: true },
         location: { type: 'string', example: 'Tầng 1, khu A' }
       }
     }
@@ -105,7 +104,6 @@ export class TablesController {
         restaurant: { type: 'string' },
         token: { type: 'string' },
         qrImage: { type: 'string' },
-        isActive: { type: 'boolean', example: true },
         location: { type: 'string', example: 'Tầng 1, khu A' }
       }
     }
@@ -132,7 +130,6 @@ export class TablesController {
           _id: { type: 'string' },
           name: { type: 'string', example: 'Bàn 3' },
           capacity: { type: 'number', example: 6 },
-          isActive: { type: 'boolean', example: true },
           location: { type: 'string', example: 'Tầng 2' },
           qrImage: { type: 'string' }
         }
@@ -170,7 +167,6 @@ export class TablesController {
         _id: { type: 'string' },
         name: { type: 'string' },
         capacity: { type: 'number' },
-        isActive: { type: 'boolean' },
         location: { type: 'string' }
       }
     }

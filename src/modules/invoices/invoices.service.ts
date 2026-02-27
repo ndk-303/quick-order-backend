@@ -6,9 +6,9 @@ import { CreateInvoiceDto } from './dto/create-invoice.dto';
 import { MenuItem, MenuItemDocument } from '../menus/schemas/menu-item.schema';
 import { Table, TableDocument } from '../tables/schemas/table.schema';
 import { Restaurant, RestaurantDocument } from '../restaurants/schemas/restaurant.schema';
-import { Order, OrderDocument, OrderStatus } from '../orders/schemas/order.schema';
 import { SseService } from '../sse/sse.service';
 import { SseEventType } from 'src/common/interfaces/sse.interface';
+import { validateMenuItemOptions, calculateItemTotal } from 'src/common/utils/order-item.util';
 
 @Injectable()
 export class InvoicesService {
@@ -17,7 +17,6 @@ export class InvoicesService {
         @InjectModel(MenuItem.name) private menuItemModel: Model<MenuItemDocument>,
         @InjectModel(Table.name) private tableModel: Model<TableDocument>,
         @InjectModel(Restaurant.name) private restaurantModel: Model<RestaurantDocument>,
-        @InjectModel(Order.name) private orderModel: Model<OrderDocument>,
         private readonly sseService: SseService,
     ) { }
 
@@ -36,16 +35,6 @@ export class InvoicesService {
 
         if (!table) {
             throw new BadRequestException('Bàn không hợp lệ!');
-        }
-
-        // 2. Check existing orders for table reuse
-        const existingOrders = await this.orderModel.find({
-            userId: new Types.ObjectId(userId),
-            tableId: new Types.ObjectId(tableId)
-        });
-
-        if (!table.isActive && !existingOrders) {
-            throw new BadRequestException('Bàn không hoạt động!');
         }
 
         // 3. Fetch menu items (only available ones)
@@ -70,49 +59,15 @@ export class InvoicesService {
                 );
             }
 
-            // 4. Validate options
-            if (itemDto.selectedOptions && itemDto.selectedOptions.length > 0) {
-                // Check if menu item supports options
-                if (!dbItem.options || dbItem.options.length === 0) {
-                    throw new BadRequestException(
-                        `Món ăn "${dbItem.name}" không hỗ trợ tùy chọn`
-                    );
-                }
-
-                // Check for duplicate options
-                const optionNames = itemDto.selectedOptions.map(opt => opt.name);
-                const uniqueNames = new Set(optionNames);
-                if (optionNames.length !== uniqueNames.size) {
-                    throw new BadRequestException('Không được chọn trùng lặp tùy chọn');
-                }
-
-                // Validate each option exists and is active
-                const availableOptions = dbItem.options.flatMap(config => config.options);
-                for (const selectedOpt of itemDto.selectedOptions) {
-                    const matchedOption = availableOptions.find(
-                        opt => opt.name === selectedOpt.name && opt.price === selectedOpt.price
-                    );
-
-                    if (!matchedOption) {
-                        throw new BadRequestException(
-                            `Tùy chọn "${selectedOpt.name}" không tồn tại cho món này`
-                        );
-                    }
-
-                    if (!matchedOption.isActive) {
-                        throw new BadRequestException(
-                            `Tùy chọn "${selectedOpt.name}" hiện không khả dụng`
-                        );
-                    }
-                }
-            }
+            // Validate options using shared util
+            validateMenuItemOptions(dbItem, itemDto.selectedOptions);
 
             // Calculate total with options
-            const optionsPrice = itemDto.selectedOptions?.reduce(
-                (sum, opt) => sum + opt.price, 0
-            ) || 0;
-            const itemTotalPrice = dbItem.price + optionsPrice;
-            const lineTotal = itemTotalPrice * itemDto.quantity;
+            const { lineTotal } = calculateItemTotal(
+                dbItem.price,
+                itemDto.quantity,
+                itemDto.selectedOptions,
+            );
             totalAmount += lineTotal;
 
             invoiceItems.push({

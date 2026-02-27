@@ -1,6 +1,7 @@
 import {
   Injectable,
   BadRequestException,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
@@ -25,9 +26,14 @@ import { SseEventType } from 'src/common/interfaces/sse.interface';
 import { UpdateOrderItemStatusDto } from './dto/update-item.dto';
 import { Restaurant, RestaurantDocument } from '../restaurants/schemas/restaurant.schema';
 import { MenuCategory } from 'src/common/enums/menu-category';
+import { validateMenuItemOptions, calculateItemTotal } from 'src/common/utils/order-item.util';
+import { OnEvent } from '@nestjs/event-emitter';
+import { InvoicePaidEvent } from 'src/common/events/invoice-paid.event';
 
 @Injectable()
 export class OrdersService {
+  private readonly logger = new Logger(OrdersService.name);
+
   constructor(
     @InjectModel(Order.name) private orderModel: Model<OrderDocument>,
     @InjectModel(MenuItem.name) private menuItemModel: Model<MenuItemDocument>,
@@ -55,11 +61,7 @@ export class OrdersService {
       userId: new Types.ObjectId(userId),
       tableId: new Types.ObjectId(tableId)
     });
-    console.log(existingOrders);
-    // Allow order if table is active OR user already has active orders on this table
-    if (!table.isActive && !existingOrders) {
-      throw new BadRequestException('Bàn không hoạt động!');
-    }
+    this.logger.debug(`Found ${existingOrders.length} existing order(s) for table ${tableId}`);
 
     const menuItemIds = items.map((item) => item.menuItemId);
     const menuItems = await this.menuItemModel.find({
@@ -81,49 +83,14 @@ export class OrdersService {
         );
       }
 
-      // Validate selected options
-      if (itemDto.selectedOptions && itemDto.selectedOptions.length > 0) {
-        // Check if menu item supports options
-        if (!dbItem.options || dbItem.options.length === 0) {
-          throw new BadRequestException(
-            `Món ăn "${dbItem.name}" không hỗ trợ tùy chọn`
-          );
-        }
+      // Validate selected options using shared util
+      validateMenuItemOptions(dbItem, itemDto.selectedOptions);
 
-        // 1. Check for duplicate options
-        const optionNames = itemDto.selectedOptions.map(opt => opt.name);
-        const uniqueNames = new Set(optionNames);
-        if (optionNames.length !== uniqueNames.size) {
-          throw new BadRequestException('Không được chọn trùng lặp tùy chọn');
-        }
-
-        // 2. Validate each option exists and is active
-        const availableOptions = dbItem.options.flatMap(config => config.options);
-        for (const selectedOpt of itemDto.selectedOptions) {
-          const matchedOption = availableOptions.find(
-            opt => opt.name === selectedOpt.name && opt.price === selectedOpt.price
-          );
-
-          if (!matchedOption) {
-            throw new BadRequestException(
-              `Tùy chọn "${selectedOpt.name}" không tồn tại cho món này`
-            );
-          }
-
-          if (!matchedOption.isActive) {
-            throw new BadRequestException(
-              `Tùy chọn "${selectedOpt.name}" hiện không khả dụng`
-            );
-          }
-        }
-      }
-
-      const optionsPrice = itemDto.selectedOptions?.reduce(
-        (sum, opt) => sum + opt.price,
-        0
-      ) || 0;
-      const itemTotalPrice = dbItem.price + optionsPrice;
-      const lineTotal = itemTotalPrice * itemDto.quantity;
+      const { lineTotal } = calculateItemTotal(
+        dbItem.price,
+        itemDto.quantity,
+        itemDto.selectedOptions,
+      );
       totalAmount += lineTotal;
 
       snapshotItems.push({
@@ -147,9 +114,6 @@ export class OrdersService {
       status: OrderStatus.PENDING,
     });
 
-    if (existingOrders.length === 0) {
-      await this.tableModel.findByIdAndUpdate(tableId, { isActive: false });
-    }
 
     const order = await this.orderModel
       .findById(newOrder._id)
@@ -211,8 +175,7 @@ export class OrdersService {
   }
 
   async findAll(restaurantId: string, category?: MenuCategory) {
-    console.log('Category', category);
-    console.log('equal: ', category === MenuCategory.FOOD);
+    this.logger.debug(`findAll — restaurantId: ${restaurantId}, category: ${category}`);
     const orders = await this.orderModel
       .find({
         restaurantId: new Types.ObjectId(restaurantId),
@@ -256,18 +219,22 @@ export class OrdersService {
     return orders;
   }
 
-  async createFromInvoice(invoice: any) {
-    console.log('Invoice items', invoice.items);
-    const orderItems = invoice.items.map(item => ({
+  @OnEvent('invoice.paid')
+  async handleInvoicePaid(event: InvoicePaidEvent): Promise<void> {
+    const invoice = event.invoice;
+    this.logger.debug(`[invoice.paid] Creating order from invoice ${invoice._id} — ${invoice.items?.length ?? 0} item(s)`);
+
+    const orderItems: OrderItemSnapshot[] = invoice.items.map((item) => ({
       menuItemId: item.menuItemId,
       name: item.name,
       price: item.price,
       quantity: item.quantity,
+      selectedOptions: item.selectedOptions || [],
       note: item.note,
       status: OrderStatus.PENDING,
       category: item.category,
     }));
-    console.log('OrderItems', orderItems);
+
     const newOrder = new this.orderModel({
       userId: invoice.userId,
       restaurantId: invoice.restaurantId,
@@ -278,9 +245,6 @@ export class OrdersService {
     });
 
     const savedOrder = await newOrder.save();
-
-    // Update table status to inactive (occupied)
-    await this.tableModel.findByIdAndUpdate(invoice.tableId, { isActive: false });
 
     const populatedOrder = await this.orderModel
       .findById(savedOrder._id)
@@ -296,7 +260,7 @@ export class OrdersService {
       userId: populatedOrder?.userId.toString(),
     });
 
-    return savedOrder;
+    this.logger.debug(`[invoice.paid] Order ${savedOrder._id} created successfully`);
   }
 
   async findOne(id: string) {

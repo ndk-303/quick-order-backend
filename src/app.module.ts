@@ -1,5 +1,6 @@
 import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 import { DatabaseModule } from './database/database.module';
 import { LoggerMiddleware } from './common/middlewares/logging.middleware';
 
@@ -23,6 +24,7 @@ import { DevToolsModule } from './modules/dev-tools/dev-tools.module';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
+    EventEmitterModule.forRoot(),
     CacheModule.registerAsync(cacheConfig),
     CommonModule, // Global module for shared services
     DatabaseModule, // Kết nối DB qua module riêng

@@ -1,6 +1,7 @@
 import {
   Injectable,
   BadRequestException,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
@@ -21,6 +22,8 @@ import { CacheInvalidationService } from 'src/common/services/cache-invalidation
 
 @Injectable()
 export class MenusService {
+  private readonly logger = new Logger(MenusService.name);
+
   constructor(
     @InjectModel(MenuItem.name) private menuItemModel: Model<MenuItemDocument>,
     @InjectModel(Table.name) private tableModel: Model<TableDocument>,
@@ -88,15 +91,11 @@ export class MenusService {
     };
 
     const newItem = new this.menuItemModel(data);
-    try {
-      await newItem.save();
-    } catch (error) {
-      console.log(error);
-    }
+    await newItem.save();
 
     // Invalidate menu cache for this restaurant
     await this.cacheInvalidationService.invalidateMenu(restaurantId);
-    return { message: 'ok' };
+    return { message: 'Thêm món ăn thành công' };
   }
 
   async findOne(id: string): Promise<MenuItem> {
@@ -147,7 +146,7 @@ export class MenusService {
         _id: tableId,
         restaurant: restaurantId,
       })
-      .select('_id name restaurant isActive')
+      .select('_id name restaurant')
       .populate('restaurant', '_id name')
       .exec();
 
@@ -155,9 +154,6 @@ export class MenusService {
       throw new BadRequestException('Bàn không tồn tại!');
     }
 
-    if (!table.isActive) {
-      throw new BadRequestException('Bàn không hoạt động!');
-    }
 
     const query = this.buildMenuQuery(restaurantId, filters, true);
     const menu = await this.menuItemModel
@@ -168,7 +164,7 @@ export class MenusService {
     if (!menu) {
       throw new BadRequestException('Menu trống!');
     }
-    console.log(menu);
+    this.logger.debug(`getMenuForClient — ${menu.length} item(s) for restaurant ${restaurantId}`);
     return {
       table: table,
       menu: menu,

@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsString, IsOptional, IsNumber, IsBoolean } from 'class-validator';
+import { IsNotEmpty, IsString, IsOptional, IsNumber } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateTableDto {
@@ -22,16 +22,6 @@ export class CreateTableDto {
   capacity: number;
 
   @ApiPropertyOptional({
-    description: 'Trạng thái hoạt động của bàn',
-    example: true,
-    type: Boolean,
-    default: true
-  })
-  @IsOptional()
-  @IsBoolean()
-  isActive?: boolean;
-
-  @ApiPropertyOptional({
     description: 'Vị trí bàn trong nhà hàng',
     example: 'Tầng 1, khu A',
     type: String
@@ -40,5 +30,3 @@ export class CreateTableDto {
   @IsString()
   location?: string;
 }
-
-

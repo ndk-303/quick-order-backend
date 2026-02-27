@@ -6,7 +6,6 @@ import { Invoice, InvoiceSchema } from './schemas/invoice.schema';
 import { MenuItem, MenuItemSchema } from '../menus/schemas/menu-item.schema';
 import { Table, TableSchema } from '../tables/schemas/table.schema';
 import { Restaurant, RestaurantSchema } from '../restaurants/schemas/restaurant.schema';
-import { Order, OrderSchema } from '../orders/schemas/order.schema';
 import { RestaurantsModule } from '../restaurants/restaurants.module';
 
 @Module({
@@ -16,7 +15,6 @@ import { RestaurantsModule } from '../restaurants/restaurants.module';
             { name: MenuItem.name, schema: MenuItemSchema },
             { name: Table.name, schema: TableSchema },
             { name: Restaurant.name, schema: RestaurantSchema },
-            { name: Order.name, schema: OrderSchema },
         ]),
         RestaurantsModule,
     ],
