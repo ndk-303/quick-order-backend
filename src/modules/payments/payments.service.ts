@@ -5,6 +5,7 @@ import { CreatePaymentDto } from './dto/create-payment.dto';
 import { InvoiceStatus, InvoiceDocument, PaymentMethod } from '../invoices/schemas/invoice.schema';
 import { ConfigService } from '@nestjs/config';
 import { InvoicePaidEvent } from 'src/common/events/invoice-paid.event';
+import { VnpayParams } from 'src/common/interfaces/query.interface';
 import * as crypto from 'crypto';
 import * as qs from 'qs';
 
@@ -59,18 +60,18 @@ export class PaymentsService {
         // VNPAY expects amount * 100
         const amount = invoice.totalAmount * 100;
 
-        // Basic params
-        const vnp_Params: any = {};
+        // Basic params — VNPAY requires all values as strings
+        const vnp_Params: VnpayParams = {};
         vnp_Params['vnp_Version'] = '2.1.0';
         vnp_Params['vnp_Command'] = 'pay';
-        vnp_Params['vnp_TmnCode'] = tmnCode;
+        vnp_Params['vnp_TmnCode'] = tmnCode ?? '';
         vnp_Params['vnp_Locale'] = 'vn';
         vnp_Params['vnp_CurrCode'] = 'VND';
         vnp_Params['vnp_TxnRef'] = orderId;
         vnp_Params['vnp_OrderInfo'] = `Thanh toan don hang ${orderId}`;
         vnp_Params['vnp_OrderType'] = 'other';
-        vnp_Params['vnp_Amount'] = amount;
-        vnp_Params['vnp_ReturnUrl'] = returnUrl;
+        vnp_Params['vnp_Amount'] = String(amount);
+        vnp_Params['vnp_ReturnUrl'] = returnUrl ?? '';
         vnp_Params['vnp_IpAddr'] = ipAddr;
         vnp_Params['vnp_CreateDate'] = createDate;
 
@@ -87,7 +88,7 @@ export class PaymentsService {
         return vnpUrl + '?' + qs.stringify(sortedParams, { encode: false });
     }
 
-    async verifyReturnUrl(vnp_Params: any) {
+    async verifyReturnUrl(vnp_Params: VnpayParams) {
         try {
             const secureHash = vnp_Params['vnp_SecureHash'];
 
@@ -118,7 +119,7 @@ export class PaymentsService {
         }
     }
 
-    async vnpayIpn(vnp_Params: any) {
+    async vnpayIpn(vnp_Params: VnpayParams) {
         const secureHash = vnp_Params['vnp_SecureHash'];
 
         delete vnp_Params['vnp_SecureHash'];
@@ -188,18 +189,18 @@ export class PaymentsService {
         }
     }
 
-    private sortObject(obj: any) {
-        const sorted: any = {};
+    private sortObject(obj: VnpayParams): VnpayParams {
+        const sorted: VnpayParams = {};
         const str: string[] = [];
-        let key;
-        for (key in obj) {
-            if (Object.prototype.hasOwnProperty.call(obj, key)) {
-                str.push(encodeURIComponent(key));
+        let key: number;
+        for (const k in obj) {
+            if (Object.prototype.hasOwnProperty.call(obj, k)) {
+                str.push(encodeURIComponent(k));
             }
         }
         str.sort();
         for (key = 0; key < str.length; key++) {
-            sorted[str[key]] = encodeURIComponent(obj[str[key]]).replace(/%20/g, "+");
+            sorted[str[key]] = encodeURIComponent(obj[decodeURIComponent(str[key])]).replace(/%20/g, '+');
         }
         return sorted;
     }

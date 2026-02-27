@@ -19,6 +19,7 @@ import {
   RestaurantDocument,
 } from '../restaurants/schemas/restaurant.schema';
 import { CacheInvalidationService } from 'src/common/services/cache-invalidation.service';
+import { MenuQuery } from 'src/common/interfaces/query.interface';
 
 @Injectable()
 export class MenusService {
@@ -37,7 +38,7 @@ export class MenusService {
     filters: MenuFilterDto,
     isClientQuery: boolean = false,
   ) {
-    const query: any = {
+    const query: MenuQuery = {
       restaurant: new Types.ObjectId(restaurantId),
     };
 

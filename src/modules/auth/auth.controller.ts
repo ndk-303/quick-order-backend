@@ -19,6 +19,7 @@ import { ConfigService } from '@nestjs/config';
 import { ApiTags, ApiOperation, ApiResponse, ApiBody, ApiBearerAuth } from '@nestjs/swagger';
 import { VerifyAccountDto, ResendOtpDto } from './dto/verify-account.dto';
 import { RequestOtpDto, VerifyOtpDto } from './dto/otp.dto';
+import { GoogleAuthRequest, GoogleUserProfile } from 'src/common/interfaces/http-request.interface';
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -104,47 +105,33 @@ export class AuthController {
     }
   })
   @HttpCode(200)
-  async login(
-    @Body() loginDto: LoginDto,
-    @Res({ passthrough: true }) response: any,
-  ) {
-    const { accessToken, refreshToken, user } =
-      await this.authService.login(loginDto);
-
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  async login(@Body() loginDto: LoginDto, @Res({ passthrough: true }) response: any) {
+    const { accessToken, refreshToken, user } = await this.authService.login(loginDto);
     response.cookie('refresh_token', refreshToken, {
       httpOnly: true,
       secure: true,
       sameSite: 'none',
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
-    console.log("Access Token:", accessToken)
     return { accessToken, user };
   }
 
   @Public()
   @Post('refresh')
-  async refresh(
-    @Req() request: any,
-    @Res({ passthrough: true }) response: any,
-  ) {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
-    const refreshToken = request.cookies['refresh_token'];
-    console.log(refreshToken);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  async refresh(@Req() request: any, @Res({ passthrough: true }) response: any) {
+    const refreshToken = request.cookies?.['refresh_token'] as string | undefined;
     if (!refreshToken) {
       throw new UnauthorizedException('Refresh token not found');
     }
-
     const newTokens = await this.authService.refreshToken(refreshToken);
-
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
     response.cookie('refresh_token', newTokens.refreshToken, {
       httpOnly: true,
       secure: true,
       sameSite: 'none',
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
-
     return { accessToken: newTokens.accessToken, user: newTokens.user };
   }
 
@@ -164,8 +151,8 @@ export class AuthController {
       }
     }
   })
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   logout(@Res({ passthrough: true }) response: any) {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
     response.clearCookie('refresh_token');
     return { message: 'Logged out successfully' };
   }
@@ -302,22 +289,21 @@ export class AuthController {
   @Public()
   @Get('google/callback')
   @UseGuards(AuthGuard('google'))
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async googleAuthCallback(@Req() req: any, @Res() res: any) {
-    const result = await this.authService.googleLogin(req.user);
+    const result = await this.authService.googleLogin(req.user as GoogleUserProfile);
 
     const isProduction = process.env.NODE_ENV === 'production';
     const frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'http://localhost:5173';
     const isCrossDomain = frontendUrl.includes('ngrok');
 
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
     res.cookie('refresh_token', result.refreshToken, {
       httpOnly: true,
-      secure: isCrossDomain || isProduction, // true for ngrok/production
-      sameSite: isCrossDomain ? 'none' : 'lax', // 'none' for cross-domain
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      secure: isCrossDomain || isProduction,
+      sameSite: isCrossDomain ? 'none' : 'lax',
+      maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
-    // Redirect to frontend with ONLY access token (refresh token in cookie)
     res.redirect(`${frontendUrl}/auth/callback?token=${result.accessToken}`);
   }
 }

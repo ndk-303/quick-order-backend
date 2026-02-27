@@ -12,6 +12,7 @@ import { RegisterDto } from './dto/register.dto';
 import { comparePassword, hashPassword } from 'src/common/utils/password.util';
 import { LoginDto } from './dto/login.dto';
 import { Payload } from 'src/common/interfaces/payload.interface';
+import { GoogleUserProfile } from 'src/common/interfaces/http-request.interface';
 
 @Injectable()
 export class AuthService {
@@ -294,7 +295,7 @@ export class AuthService {
     return { message: 'Đặt lại mật khẩu thành công' };
   }
 
-  async googleLogin(googleUser: any) {
+  async googleLogin(googleUser: GoogleUserProfile) {
     try {
       this.logger.debug(`Google login attempt for: ${googleUser.email}`);
 
