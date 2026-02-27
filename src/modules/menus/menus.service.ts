@@ -20,6 +20,7 @@ import {
 } from '../restaurants/schemas/restaurant.schema';
 import { CacheInvalidationService } from 'src/common/services/cache-invalidation.service';
 import { MenuQuery } from 'src/common/interfaces/query.interface';
+import { CloudinaryService } from 'src/common/services/cloudinary.service';
 
 @Injectable()
 export class MenusService {
@@ -31,6 +32,7 @@ export class MenusService {
     @InjectModel(Restaurant.name)
     private restaurantModel: Model<RestaurantDocument>,
     private readonly cacheInvalidationService: CacheInvalidationService,
+    private readonly cloudinaryService: CloudinaryService,
   ) { }
 
   private buildMenuQuery(
@@ -72,9 +74,9 @@ export class MenusService {
   }
 
   async create(
-    restaurantId,
+    restaurantId: string,
     createMenuItemDto: CreateMenuItemDto,
-    imageUrl: string,
+    file?: Express.Multer.File,
   ) {
     const restaurantExists = await this.restaurantModel.findById(restaurantId);
 
@@ -84,11 +86,16 @@ export class MenusService {
       );
     }
 
+    if (!file) {
+      throw new BadRequestException('Ảnh món ăn là bắt buộc');
+    }
+
+    const imageUrl = await this.cloudinaryService.uploadMenuImage(file);
+
     const data = {
       ...createMenuItemDto,
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       restaurant: restaurantId,
-      imageUrl: imageUrl,
+      imageUrl,
     };
 
     const newItem = new this.menuItemModel(data);

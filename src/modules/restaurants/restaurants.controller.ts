@@ -7,7 +7,6 @@ import {
   UploadedFile,
   ParseFilePipe,
   FileTypeValidator,
-  BadRequestException,
   Delete,
   Param,
   Req,
@@ -18,7 +17,6 @@ import { RestaurantTypesService } from './restaurant-types.service';
 import { FavoritesService } from './favorites.service';
 import { CreateRestaurantDto } from './dto/create-restaurant.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { CloudinaryService } from 'src/common/services/cloudinary.service';
 import { CacheInterceptor, CacheTTL } from '@nestjs/cache-manager';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiConsumes, ApiBody, ApiParam } from '@nestjs/swagger';
 import { Public } from 'src/common/decorators/public.decorator';
@@ -30,7 +28,6 @@ export class RestaurantsController {
     private readonly restaurantsService: RestaurantsService,
     private readonly restaurantTypesService: RestaurantTypesService,
     private readonly favoritesService: FavoritesService,
-    private readonly cloudinaryService: CloudinaryService,
   ) { }
 
   @Post()
@@ -82,17 +79,7 @@ export class RestaurantsController {
     )
     file: Express.Multer.File,
   ) {
-    if (file) {
-      const imageUrl = await this.cloudinaryService.uploadRestaurantImage(file);
-      const data = {
-        ...createRestaurantDto,
-        imageUrl: imageUrl,
-      };
-
-      return this.restaurantsService.create(data);
-    } else {
-      throw new BadRequestException('Ảnh không hợp lệ');
-    }
+    return this.restaurantsService.create(createRestaurantDto, file);
   }
 
   @Public()
@@ -254,12 +241,7 @@ export class RestaurantsController {
     )
     file: Express.Multer.File,
   ) {
-    if (file) {
-      const imageUrl = await this.cloudinaryService.uploadRestaurantImage(file);
-      return this.restaurantTypesService.create({ name, imageUrl });
-    } else {
-      throw new BadRequestException('File ảnh không hợp lệ');
-    }
+    return this.restaurantTypesService.create({ name }, file);
   }
 
 

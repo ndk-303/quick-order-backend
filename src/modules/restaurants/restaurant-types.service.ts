@@ -6,6 +6,7 @@ import {
     RestaurantTypeDocument,
 } from './schemas/restaurant-types.schema';
 import { CreateRestaurantTypeDto } from './dto/create-restaurant-type.dto';
+import { CloudinaryService } from 'src/common/services/cloudinary.service';
 import slugify from 'slugify';
 
 @Injectable()
@@ -15,9 +16,13 @@ export class RestaurantTypesService {
     constructor(
         @InjectModel(RestaurantType.name)
         private restaurantTypeModel: Model<RestaurantTypeDocument>,
+        private readonly cloudinaryService: CloudinaryService,
     ) { }
 
-    async create(createTypeDto: CreateRestaurantTypeDto): Promise<RestaurantType> {
+    async create(
+        createTypeDto: CreateRestaurantTypeDto,
+        file?: Express.Multer.File,
+    ): Promise<RestaurantType> {
         const slug = slugify(createTypeDto.name, {
             lower: true,
             strict: true,
@@ -29,12 +34,16 @@ export class RestaurantTypesService {
             throw new BadRequestException('Loại nhà hàng đã tồn tại');
         }
 
+        const imageUrl = file
+            ? await this.cloudinaryService.uploadRestaurantImage(file)
+            : createTypeDto.imageUrl;
+
         this.logger.debug(`Creating restaurant type: ${createTypeDto.name} (${slug})`);
 
         return this.restaurantTypeModel.create({
             name: createTypeDto.name,
             slug,
-            imageUrl: createTypeDto.imageUrl,
+            imageUrl,
         });
     }
 

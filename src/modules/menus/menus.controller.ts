@@ -19,7 +19,6 @@ import { MenusService } from './menus.service';
 import { CreateMenuItemDto } from './dto/create-menu-item.dto';
 import { UpdateMenuItemDto } from './dto/update-menu-item.dto';
 import { MenuFilterDto } from './dto/menu-filter.dto';
-import { CloudinaryService } from 'src/common/services/cloudinary.service';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Public } from 'src/common/decorators/public.decorator';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiConsumes, ApiParam, ApiQuery } from '@nestjs/swagger';
@@ -31,7 +30,6 @@ import { GeoFencingGuard } from 'src/common/guards/geocoding.guard';
 export class MenusController {
   constructor(
     private readonly menusService: MenusService,
-    private readonly cloudinaryService: CloudinaryService,
   ) { }
 
   @Post()
@@ -51,16 +49,12 @@ export class MenusController {
     )
     file: Express.Multer.File,
   ) {
-    if (file) {
-      const imageUrl = await this.cloudinaryService.uploadMenuImage(file);
-      return this.menusService.create(
-        req.user.restaurantId,
-        createMenuItemDto,
-        imageUrl,
-      );
-    } else {
-      throw new BadRequestException('File ảnh không hợp lệ');
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const restaurantId = (req as any).user?.restaurantId as string;
+    if (!restaurantId) {
+      throw new BadRequestException('Tài khoản chưa được liên kết với nhà hàng nào');
     }
+    return this.menusService.create(restaurantId, createMenuItemDto, file);
   }
 
   @Get(':id')

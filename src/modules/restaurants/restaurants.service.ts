@@ -10,6 +10,7 @@ import { Restaurant, RestaurantDocument } from './schemas/restaurant.schema';
 import { CreateRestaurantDto } from './dto/create-restaurant.dto';
 import { UpdateRestaurantDto } from './dto/update-restaurant.dto';
 import { RestaurantTypesService } from './restaurant-types.service';
+import { CloudinaryService } from 'src/common/services/cloudinary.service';
 
 @Injectable()
 export class RestaurantsService {
@@ -19,9 +20,13 @@ export class RestaurantsService {
     @InjectModel(Restaurant.name)
     private restaurantModel: Model<RestaurantDocument>,
     private readonly restaurantTypesService: RestaurantTypesService,
+    private readonly cloudinaryService: CloudinaryService,
   ) { }
 
-  async create(createRestaurantDto: CreateRestaurantDto): Promise<Restaurant> {
+  async create(
+    createRestaurantDto: CreateRestaurantDto,
+    file?: Express.Multer.File,
+  ): Promise<Restaurant> {
     const restaurantType = await this.restaurantTypesService.findBySlug(
       createRestaurantDto.type,
     );
@@ -29,10 +34,17 @@ export class RestaurantsService {
       throw new BadRequestException('Không có loại nhà hàng này');
     }
 
+    if (!file) {
+      throw new BadRequestException('Ảnh nhà hàng là bắt buộc');
+    }
+
+    const imageUrl = await this.cloudinaryService.uploadRestaurantImage(file);
+
     this.logger.debug(`Creating restaurant: ${createRestaurantDto.name}`);
 
     const newRestaurant = new this.restaurantModel({
       ...createRestaurantDto,
+      imageUrl,
       location: {
         type: 'Point',
         coordinates: createRestaurantDto.coordinates,
