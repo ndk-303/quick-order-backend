@@ -29,6 +29,8 @@ import { MenuCategory } from 'src/common/enums/menu-category';
 import { validateMenuItemOptions, calculateItemTotal } from 'src/common/utils/order-item.util';
 import { OnEvent } from '@nestjs/event-emitter';
 import { InvoicePaidEvent } from 'src/common/events/invoice-paid.event';
+import { PaginationDto } from 'src/common/dto/pagination.dto';
+import { buildPaginatedResult, PaginatedResult } from 'src/common/interfaces/paginated-result.interface';
 
 @Injectable()
 export class OrdersService {
@@ -174,49 +176,62 @@ export class OrdersService {
     return populatedOrder;
   }
 
-  async findAll(restaurantId: string, category?: MenuCategory) {
+  async findAll(
+    restaurantId: string,
+    pagination: PaginationDto = {},
+    category?: MenuCategory,
+  ): Promise<PaginatedResult<Order>> {
     this.logger.debug(`findAll — restaurantId: ${restaurantId}, category: ${category}`);
-    const orders = await this.orderModel
-      .find({
-        restaurantId: new Types.ObjectId(restaurantId),
-        status: {
-          $nin: ['COMPLETED', 'CANCELED'],
-        },
-      })
-      .sort({ createdAt: -1 })
-      .populate({
-        path: 'tableId',
-        model: Table.name,
-        select: 'name',
-      })
-      .select('-createdAt -updatedAt -priorityScore')
-      .lean()
-      .exec();
+    const page = pagination.page ?? 1;
+    const limit = pagination.limit ?? 10;
+    const skip = (page - 1) * limit;
 
-    if (!orders) {
-      throw new NotFoundException('Orders not found');
-    }
+    const filter = {
+      restaurantId: new Types.ObjectId(restaurantId),
+      status: { $nin: ['COMPLETED', 'CANCELED'] },
+    };
 
-    return orders;
+    const [data, total] = await Promise.all([
+      this.orderModel
+        .find(filter)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .populate({ path: 'tableId', model: Table.name, select: 'name' })
+        .select('-createdAt -updatedAt -priorityScore')
+        .lean()
+        .exec(),
+      this.orderModel.countDocuments(filter),
+    ]);
+
+    return buildPaginatedResult(data as Order[], total, page, limit);
   }
 
-  async findAllForClient(userId: string, status: string[]) {
-    const orders = await this.orderModel
-      .find({ userId: new Types.ObjectId(userId), status: { $in: status } })
-      .sort({ createdAt: -1 })
-      .populate({
-        path: 'tableId',
-        model: Table.name,
-        select: 'name',
-      })
-      .populate('restaurantId', 'name')
-      .select('-createdAt -updatedAt -priorityScore')
-      .exec();
+  async findAllForClient(
+    userId: string,
+    status: string[],
+    pagination: PaginationDto = {},
+  ): Promise<PaginatedResult<Order>> {
+    const page = pagination.page ?? 1;
+    const limit = pagination.limit ?? 10;
+    const skip = (page - 1) * limit;
 
-    if (!orders) {
-      throw new NotFoundException('Orders not found');
-    }
-    return orders;
+    const filter = { userId: new Types.ObjectId(userId), status: { $in: status } };
+
+    const [data, total] = await Promise.all([
+      this.orderModel
+        .find(filter)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .populate({ path: 'tableId', model: Table.name, select: 'name' })
+        .populate('restaurantId', 'name')
+        .select('-createdAt -updatedAt -priorityScore')
+        .exec(),
+      this.orderModel.countDocuments(filter),
+    ]);
+
+    return buildPaginatedResult(data as Order[], total, page, limit);
   }
 
   @OnEvent('invoice.paid')

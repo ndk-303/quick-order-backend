@@ -172,7 +172,7 @@ export class OrdersController {
     }
   })
   findForKitchen(@Param('restaurantId') restaurantId: string, @Query('category') category: MenuCategory) {
-    return this.ordersService.findAll(restaurantId, category);
+    return this.ordersService.findAll(restaurantId, {}, category);
   }
 
   @Get('client')

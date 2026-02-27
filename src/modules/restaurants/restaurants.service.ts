@@ -11,6 +11,8 @@ import { CreateRestaurantDto } from './dto/create-restaurant.dto';
 import { UpdateRestaurantDto } from './dto/update-restaurant.dto';
 import { RestaurantTypesService } from './restaurant-types.service';
 import { CloudinaryService } from 'src/common/services/cloudinary.service';
+import { PaginationDto } from 'src/common/dto/pagination.dto';
+import { buildPaginatedResult, PaginatedResult } from 'src/common/interfaces/paginated-result.interface';
 
 @Injectable()
 export class RestaurantsService {
@@ -55,12 +57,23 @@ export class RestaurantsService {
     return newRestaurant.save();
   }
 
-  async findAll(): Promise<Restaurant[]> {
-    return this.restaurantModel
-      .find()
-      .sort({ createdAt: -1 })
-      .populate('type', 'name slug')
-      .exec();
+  async findAll(pagination: PaginationDto = {}): Promise<PaginatedResult<Restaurant>> {
+    const page = pagination.page ?? 1;
+    const limit = pagination.limit ?? 10;
+    const skip = (page - 1) * limit;
+
+    const [data, total] = await Promise.all([
+      this.restaurantModel
+        .find()
+        .sort({ createdAt: -1 })
+        .populate('type', 'name slug')
+        .skip(skip)
+        .limit(limit)
+        .exec(),
+      this.restaurantModel.countDocuments(),
+    ]);
+
+    return buildPaginatedResult(data, total, page, limit);
   }
 
   async findById(_id: string): Promise<Restaurant> {

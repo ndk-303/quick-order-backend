@@ -9,6 +9,8 @@ import { Restaurant, RestaurantDocument } from '../restaurants/schemas/restauran
 import { SseService } from '../sse/sse.service';
 import { SseEventType } from 'src/common/interfaces/sse.interface';
 import { validateMenuItemOptions, calculateItemTotal } from 'src/common/utils/order-item.util';
+import { PaginationDto } from 'src/common/dto/pagination.dto';
+import { buildPaginatedResult, PaginatedResult } from 'src/common/interfaces/paginated-result.interface';
 
 @Injectable()
 export class InvoicesService {
@@ -141,22 +143,45 @@ export class InvoicesService {
         return invoice;
     }
 
-    async findByUser(userId: string) {
-        const invoices = await this.invoiceModel
-            .find({ userId: new Types.ObjectId(userId), status: InvoiceStatus.PAID })
-            .populate('restaurantId', 'name address')
-            .sort({ createdAt: -1 })
-            .exec();
-        return invoices;
+    async findByUser(userId: string, pagination: PaginationDto = {}): Promise<PaginatedResult<InvoiceDocument>> {
+        const page = pagination.page ?? 1;
+        const limit = pagination.limit ?? 10;
+        const skip = (page - 1) * limit;
+        const filter = { userId: new Types.ObjectId(userId), status: InvoiceStatus.PAID };
+
+        const [data, total] = await Promise.all([
+            this.invoiceModel
+                .find(filter)
+                .populate('restaurantId', 'name address')
+                .sort({ createdAt: -1 })
+                .skip(skip)
+                .limit(limit)
+                .exec(),
+            this.invoiceModel.countDocuments(filter),
+        ]);
+
+        return buildPaginatedResult(data, total, page, limit);
     }
 
-    async findByRestaurant(restaurantId: string) {
-        return this.invoiceModel
-            .find({ restaurantId: new Types.ObjectId(restaurantId) })
-            .populate('tableId', 'name')
-            .populate('userId', 'fullName email')
-            .sort({ createdAt: -1 })
-            .exec();
+    async findByRestaurant(restaurantId: string, pagination: PaginationDto = {}): Promise<PaginatedResult<InvoiceDocument>> {
+        const page = pagination.page ?? 1;
+        const limit = pagination.limit ?? 10;
+        const skip = (page - 1) * limit;
+        const filter = { restaurantId: new Types.ObjectId(restaurantId) };
+
+        const [data, total] = await Promise.all([
+            this.invoiceModel
+                .find(filter)
+                .populate('tableId', 'name')
+                .populate('userId', 'fullName email')
+                .sort({ createdAt: -1 })
+                .skip(skip)
+                .limit(limit)
+                .exec(),
+            this.invoiceModel.countDocuments(filter),
+        ]);
+
+        return buildPaginatedResult(data, total, page, limit);
     }
 }
 
