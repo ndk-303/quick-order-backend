@@ -312,6 +312,4 @@ export class RestaurantsController {
     await this.favoritesService.remove(userId, restaurantId);
     return { message: 'Đã xóa khỏi danh sách yêu thích' };
   }
-
-
 }

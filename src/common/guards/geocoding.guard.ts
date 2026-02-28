@@ -23,7 +23,9 @@ export class GeoFencingGuard implements CanActivate {
     if (request.method === 'GET') {
       const latQuery = request.query.lat as string;
       const longQuery = request.query.long as string;
-
+      if (!latQuery || !longQuery) {
+        throw new BadRequestException('Thiếu thông tin vị trí.');
+      }
       lat = parseFloat(latQuery);
       long = parseFloat(longQuery);
 
