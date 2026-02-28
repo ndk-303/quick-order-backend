@@ -149,7 +149,7 @@ export class InvoicesService {
         const skip = (page - 1) * limit;
         const filter = { userId: new Types.ObjectId(userId), status: InvoiceStatus.PAID };
 
-        const [data, total] = await Promise.all([
+        const [invoices, total] = await Promise.all([
             this.invoiceModel
                 .find(filter)
                 .populate('restaurantId', 'name address')
@@ -160,7 +160,7 @@ export class InvoicesService {
             this.invoiceModel.countDocuments(filter),
         ]);
 
-        return buildPaginatedResult(data, total, page, limit);
+        return buildPaginatedResult(invoices, total, page, limit);
     }
 
     async findByRestaurant(restaurantId: string, pagination: PaginationDto = {}): Promise<PaginatedResult<InvoiceDocument>> {
@@ -169,7 +169,7 @@ export class InvoicesService {
         const skip = (page - 1) * limit;
         const filter = { restaurantId: new Types.ObjectId(restaurantId) };
 
-        const [data, total] = await Promise.all([
+        const [invoices, total] = await Promise.all([
             this.invoiceModel
                 .find(filter)
                 .populate('tableId', 'name')
@@ -181,7 +181,7 @@ export class InvoicesService {
             this.invoiceModel.countDocuments(filter),
         ]);
 
-        return buildPaginatedResult(data, total, page, limit);
+        return buildPaginatedResult(invoices, total, page, limit);
     }
 }
 

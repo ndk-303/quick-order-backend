@@ -79,19 +79,39 @@ export class InvoicesController {
         status: 200,
         description: 'Danh sách hóa đơn',
         schema: {
-            type: 'array',
-            items: {
-                type: 'object',
-                properties: {
-                    _id: { type: 'string' },
-                    restaurantId: { type: 'string' },
-                    tableId: { type: 'string' },
-                    items: { type: 'array' },
-                    totalAmount: { type: 'number', example: 250000 },
-                    status: { type: 'string', enum: ['PENDING', 'PAID', 'CANCELLED'], example: 'PENDING' },
-                    paymentMethod: { type: 'string', enum: ['BANK', 'MOMO', 'ZALOPAY', 'VNPAY'], nullable: true },
-                    createdAt: { type: 'string', format: 'date-time' }
-                }
+            type: 'object',
+            properties: {
+                invoices: {
+                    type: 'array',
+                    items: {
+                        type: 'object',
+                        properties: {
+                            _id: { type: 'string' },
+                            restaurantId: {
+                                type: 'object',
+                                properties: {
+                                    _id: { type: 'string' },
+                                    name: { type: 'string', example: 'Nhà hàng ABC' }
+                                }
+                            },
+                            tableId: {
+                                type: 'object',
+                                properties: {
+                                    _id: { type: 'string' },
+                                    name: { type: 'string', example: 'Bàn 7' }
+                                }
+                            },
+                            items: { type: 'array' },
+                            totalAmount: { type: 'number', example: 250000 },
+                            status: { type: 'string', enum: ['PENDING', 'PAID', 'CANCELLED'], example: 'PENDING' },
+                            paymentMethod: { type: 'string', enum: ['BANK', 'MOMO', 'ZALOPAY', 'VNPAY'], nullable: true },
+                            createdAt: { type: 'string', format: 'date-time' }
+                        }
+                    }
+                },
+                page: { type: 'number', example: 1 },
+                limit: { type: 'number', example: 10 },
+                total: { type: 'number', example: 100 }
             }
         }
     })
@@ -107,7 +127,46 @@ export class InvoicesController {
         summary: 'Lấy danh sách hóa đơn của nhà hàng',
         description: 'Lấy tất cả hóa đơn thuộc nhà hàng của owner đang đăng nhập (restaurantId từ JWT token)'
     })
-    @ApiResponse({ status: 200, description: 'Danh sách hóa đơn của nhà hàng' })
+    @ApiResponse({
+        status: 200,
+        description: 'Danh sách hóa đơn của nhà hàng',
+        schema: {
+            type: 'object',
+            properties: {
+                invoices: {
+                    type: 'array',
+                    items: {
+                        type: 'object',
+                        properties: {
+                            _id: { type: 'string' },
+                            restaurantId: {
+                                type: 'object',
+                                properties: {
+                                    _id: { type: 'string' },
+                                    name: { type: 'string', example: 'Nhà hàng ABC' }
+                                }
+                            },
+                            tableId: {
+                                type: 'object',
+                                properties: {
+                                    _id: { type: 'string' },
+                                    name: { type: 'string', example: 'Bàn 7' }
+                                }
+                            },
+                            items: { type: 'array' },
+                            totalAmount: { type: 'number', example: 250000 },
+                            status: { type: 'string', enum: ['PENDING', 'PAID', 'CANCELLED'], example: 'PENDING' },
+                            paymentMethod: { type: 'string', enum: ['BANK', 'MOMO', 'ZALOPAY', 'VNPAY'], nullable: true },
+                            createdAt: { type: 'string', format: 'date-time' }
+                        }
+                    }
+                },
+                page: { type: 'number', example: 1 },
+                limit: { type: 'number', example: 10 },
+                total: { type: 'number', example: 100 }
+            }
+        }
+    })
     @ApiResponse({ status: 401, description: 'Unauthorized' })
     async findRestaurantInvoices(@Req() req: any) {
         const restaurantId = req.user?.restaurantId;

@@ -62,18 +62,19 @@ export class RestaurantsService {
     const limit = pagination.limit ?? 10;
     const skip = (page - 1) * limit;
 
-    const [data, total] = await Promise.all([
+    const [restaurants, total] = await Promise.all([
       this.restaurantModel
         .find()
         .sort({ createdAt: -1 })
         .populate('type', 'name slug')
+        .select('-createdAt -updatedAt -allowedRadius')
         .skip(skip)
         .limit(limit)
         .exec(),
       this.restaurantModel.countDocuments(),
     ]);
 
-    return buildPaginatedResult(data, total, page, limit);
+    return buildPaginatedResult(restaurants, total, page, limit);
   }
 
   async findById(_id: string): Promise<Restaurant> {

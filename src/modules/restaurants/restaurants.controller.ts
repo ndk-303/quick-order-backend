@@ -92,27 +92,35 @@ export class RestaurantsController {
     status: 200,
     description: 'Danh sách nhà hàng',
     schema: {
-      type: 'array',
-      items: {
-        type: 'object',
-        properties: {
-          _id: { type: 'string' },
-          name: { type: 'string', example: 'Nhà hàng ABC' },
-          address: { type: 'string', example: '123 Nguyễn Huệ, Q1' },
-          location: {
+      type: 'object',
+      properties: {
+        restaurants: {
+          type: 'array',
+          items: {
             type: 'object',
             properties: {
-              type: { type: 'string', example: 'Point' },
-              coordinates: { type: 'array', items: { type: 'number' } }
+              _id: { type: 'string' },
+              name: { type: 'string', example: 'Nhà hàng ABC' },
+              address: { type: 'string', example: '123 Nguyễn Huệ, Q1' },
+              location: {
+                type: 'object',
+                properties: {
+                  type: { type: 'string', example: 'Point' },
+                  coordinates: { type: 'array', items: { type: 'number' } }
+                }
+              },
+              imageUrl: { type: 'string' },
+              rating: { type: 'number', example: 4.5 },
+              review: { type: 'number', example: 128 },
+              priceRange: { type: 'string', example: '50,000 - 200,000 VNĐ' },
+              type: { type: 'string' },
+              openTime: { type: 'string', example: '08:00 - 22:00' }
             }
-          },
-          imageUrl: { type: 'string' },
-          rating: { type: 'number', example: 4.5 },
-          review: { type: 'number', example: 128 },
-          priceRange: { type: 'string', example: '50,000 - 200,000 VNĐ' },
-          type: { type: 'string' },
-          openTime: { type: 'string', example: '08:00 - 22:00' }
-        }
+          }
+        },
+        page: { type: 'number', example: 1 },
+        limit: { type: 'number', example: 10 },
+        total: { type: 'number', example: 100 }
       }
     }
   })

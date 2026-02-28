@@ -191,7 +191,7 @@ export class OrdersService {
       status: { $nin: ['COMPLETED', 'CANCELED'] },
     };
 
-    const [data, total] = await Promise.all([
+    const [orders, total] = await Promise.all([
       this.orderModel
         .find(filter)
         .sort({ createdAt: -1 })
@@ -204,7 +204,7 @@ export class OrdersService {
       this.orderModel.countDocuments(filter),
     ]);
 
-    return buildPaginatedResult(data as Order[], total, page, limit);
+    return buildPaginatedResult(orders as Order[], total, page, limit);
   }
 
   async findAllForClient(
@@ -218,7 +218,7 @@ export class OrdersService {
 
     const filter = { userId: new Types.ObjectId(userId), status: { $in: status } };
 
-    const [data, total] = await Promise.all([
+    const [orders, total] = await Promise.all([
       this.orderModel
         .find(filter)
         .sort({ createdAt: -1 })
@@ -231,7 +231,7 @@ export class OrdersService {
       this.orderModel.countDocuments(filter),
     ]);
 
-    return buildPaginatedResult(data as Order[], total, page, limit);
+    return buildPaginatedResult(orders as Order[], total, page, limit);
   }
 
   @OnEvent('invoice.paid')

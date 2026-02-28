@@ -56,46 +56,54 @@ export class OrdersController {
     status: 200,
     description: 'Danh sách đơn hàng',
     schema: {
-      type: 'array',
-      items: {
-        type: 'object',
-        properties: {
-          _id: { type: 'string', example: '507f1f77bcf86cd799439011' },
-          restaurantId: { type: 'string', example: '507f1f77bcf86cd799439012' },
-          tableId: {
+      type: 'object',
+      properties: {
+        orders: {
+          type: 'array',
+          items: {
             type: 'object',
             properties: {
-              _id: { type: 'string' },
-              name: { type: 'string', example: 'Bàn 5' }
-            }
-          },
-          items: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                menuItemId: { type: 'string' },
-                name: { type: 'string', example: 'Phở bò' },
-                price: { type: 'number', example: 65000 },
-                quantity: { type: 'number', example: 2 },
-                selectedOptions: {
-                  type: 'array',
-                  items: {
-                    type: 'object',
-                    properties: {
-                      name: { type: 'string', example: 'Size L' },
-                      price: { type: 'number', example: 5000 }
-                    }
+              _id: { type: 'string', example: '507f1f77bcf86cd799439011' },
+              restaurantId: { type: 'string', example: '507f1f77bcf86cd799439012' },
+              tableId: {
+                type: 'object',
+                properties: {
+                  _id: { type: 'string' },
+                  name: { type: 'string', example: 'Bàn 5' }
+                }
+              },
+              items: {
+                type: 'array',
+                items: {
+                  type: 'object',
+                  properties: {
+                    menuItemId: { type: 'string' },
+                    name: { type: 'string', example: 'Phở bò' },
+                    price: { type: 'number', example: 65000 },
+                    quantity: { type: 'number', example: 2 },
+                    selectedOptions: {
+                      type: 'array',
+                      items: {
+                        type: 'object',
+                        properties: {
+                          name: { type: 'string', example: 'Size L' },
+                          price: { type: 'number', example: 5000 }
+                        }
+                      }
+                    },
+                    status: { type: 'string', enum: ['PENDING', 'COOKING', 'COMPLETED', 'CANCELED'], example: 'COOKING' },
+                    category: { type: 'string', enum: ['FOOD', 'DRINK', 'DESSERT'], example: 'FOOD' }
                   }
-                },
-                status: { type: 'string', enum: ['PENDING', 'COOKING', 'COMPLETED', 'CANCELED'], example: 'COOKING' },
-                category: { type: 'string', enum: ['FOOD', 'DRINK', 'DESSERT'], example: 'FOOD' }
-              }
+                }
+              },
+              totalAmount: { type: 'number', example: 130000 },
+              status: { type: 'string', enum: ['PENDING', 'COOKING', 'COMPLETED', 'CANCELED'], example: 'COOKING' }
             }
-          },
-          totalAmount: { type: 'number', example: 130000 },
-          status: { type: 'string', enum: ['PENDING', 'COOKING', 'COMPLETED', 'CANCELED'], example: 'COOKING' }
-        }
+          }
+        },
+        page: { type: 'number', example: 1 },
+        limit: { type: 'number', example: 10 },
+        total: { type: 'number', example: 100 }
       }
     }
   })
@@ -193,29 +201,37 @@ export class OrdersController {
     status: 200,
     description: 'Danh sách đơn hàng của khách',
     schema: {
-      type: 'array',
-      items: {
-        type: 'object',
-        properties: {
-          _id: { type: 'string' },
-          restaurantId: {
+      type: 'object',
+      properties: {
+        orders: {
+          type: 'array',
+          items: {
             type: 'object',
             properties: {
               _id: { type: 'string' },
-              name: { type: 'string', example: 'Nhà hàng ABC' }
+              restaurantId: {
+                type: 'object',
+                properties: {
+                  _id: { type: 'string' },
+                  name: { type: 'string', example: 'Nhà hàng ABC' }
+                }
+              },
+              tableId: {
+                type: 'object',
+                properties: {
+                  _id: { type: 'string' },
+                  name: { type: 'string', example: 'Bàn 7' }
+                }
+              },
+              items: { type: 'array' },
+              totalAmount: { type: 'number', example: 250000 },
+              status: { type: 'string', example: 'COOKING' }
             }
-          },
-          tableId: {
-            type: 'object',
-            properties: {
-              _id: { type: 'string' },
-              name: { type: 'string', example: 'Bàn 7' }
-            }
-          },
-          items: { type: 'array' },
-          totalAmount: { type: 'number', example: 250000 },
-          status: { type: 'string', example: 'COOKING' }
-        }
+          }
+        },
+        page: { type: 'number', example: 1 },
+        limit: { type: 'number', example: 10 },
+        total: { type: 'number', example: 100 }
       }
     }
   })
