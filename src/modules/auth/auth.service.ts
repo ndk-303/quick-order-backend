@@ -51,6 +51,7 @@ export class AuthService {
     return {
       message: 'Đăng ký thành công. Vui lòng kiểm tra mã OTP để kích hoạt tài khoản.',
       _id: newUser._id,
+      otp: otp,
     };
   }
 
