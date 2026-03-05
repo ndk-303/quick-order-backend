@@ -153,7 +153,11 @@ export class AuthController {
   })
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   logout(@Res({ passthrough: true }) response: any) {
-    response.clearCookie('refresh_token');
+    response.clearCookie('refresh_token', {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'none',
+    });
     return { message: 'Logged out successfully' };
   }
 
