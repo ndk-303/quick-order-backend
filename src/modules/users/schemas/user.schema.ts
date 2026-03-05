@@ -42,6 +42,9 @@ export class User {
   @Prop({ default: false })
   isActive: boolean;
 
+  @Prop({ required: false })
+  bank?: string;
+
   @Prop({ type: Types.ObjectId, ref: 'Restaurant', required: false })
   restaurantId?: Types.ObjectId;
 

@@ -185,7 +185,7 @@ export class MenusController {
   @ApiResponse({ status: 404, description: 'Restaurant or table not found' })
   @UseInterceptors(CacheInterceptor)
   @CacheTTL(300000)
-  @UseGuards(GeoFencingGuard)
+  // @UseGuards(GeoFencingGuard)
   async getMenuForGuest(
     @Param('restaurantId') restaurantId: string,
     @Param('tableId') tableId: string,

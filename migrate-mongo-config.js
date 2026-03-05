@@ -5,9 +5,9 @@ require('dotenv').config();
 
 const config = {
     mongodb: {
-        url: process.env.MONGODB_URI,
+        url: "mongodb+srv://khoa_dev_db_quick_order:SqvHzLf2rvcNE5xa@quick-order.zru6mhd.mongodb.net/test?appName=quick-order",
 
-        databaseName: 'quick-order',
+        databaseName: 'test',
 
         options: {
         },

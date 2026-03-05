@@ -50,12 +50,10 @@ export class MenusService {
       query.isAvailable = filters.isAvailable;
     }
 
-    // Category filter
     if (filters.category) {
       query.category = filters.category;
     }
 
-    // Price range filter
     if (filters.minPrice !== undefined || filters.maxPrice !== undefined) {
       query.price = {};
       if (filters.minPrice !== undefined) {
