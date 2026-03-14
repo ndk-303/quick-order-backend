@@ -4,6 +4,9 @@ import { AllExceptionsFilter } from './common/filters/http-exception.filter';
 import cookieParser from 'cookie-parser';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { ValidationPipe } from '@nestjs/common';
+import session from 'express-session';
+import MongoStore from 'connect-mongo';
+import passport from 'passport';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
@@ -16,6 +19,29 @@ async function bootstrap() {
   });
 
   app.use(cookieParser());
+
+  const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/quick-order';
+  app.use(
+    session({
+      secret: process.env.SESSION_SECRET || 'quick-order-secret-key',
+      resave: false,
+      saveUninitialized: true, // Tạo session cho cả khách chưa đăng nhập (để order sau này)
+      store: MongoStore.create({
+        mongoUrl: mongoUri,
+        collectionName: 'sessions',
+        ttl: 7 * 24 * 60 * 60, // 7 ngày (giây)
+      }),
+      cookie: {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 ngày (ms)
+      },
+    }),
+  );
+  app.use(passport.initialize());
+  app.use(passport.session());
+
   app.useGlobalFilters(new AllExceptionsFilter());
 
   // Enable validation globally
@@ -38,15 +64,11 @@ async function bootstrap() {
     .setDescription('Restaurant ordering system API - Complete documentation for all endpoints')
     .setVersion('1.0.0')
     .addServer('https://quick-order-backend.onrender.com', 'Production Server')
-    .addBearerAuth(
-      {
-        type: 'http',
-        scheme: 'bearer',
-        bearerFormat: 'JWT',
-        description: 'Enter your JWT token',
-      },
-      'JWT',
-    )
+    .addCookieAuth('connect.sid', {
+      type: 'apiKey',
+      in: 'cookie',
+      description: 'Session cookie (set automatically after login)',
+    })
     .addTag('Auth', 'Authentication and user management')
     .addTag('Restaurants', 'Restaurant CRUD operations and favorites')
     .addTag('Menus', 'Menu items management')

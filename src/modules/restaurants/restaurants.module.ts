@@ -16,8 +16,6 @@ import {
   RestaurantReview,
   RestaurantReviewSchema,
 } from './schemas/restaurant-review.schema';
-import { ReviewsService } from './reviews.service';
-import { ReviewsController } from './reviews.controller';
 import { RestaurantTypesService } from './restaurant-types.service';
 import { FavoritesService } from './favorites.service';
 
@@ -30,14 +28,13 @@ import { FavoritesService } from './favorites.service';
       { name: RestaurantReview.name, schema: RestaurantReviewSchema },
     ]),
   ],
-  controllers: [RestaurantsController, ReviewsController],
+  controllers: [RestaurantsController],
   providers: [
     RestaurantsService,
     RestaurantTypesService,
     FavoritesService,
-    ReviewsService,
     CloudinaryService,
   ],
-  exports: [RestaurantsService, RestaurantTypesService, FavoritesService, ReviewsService],
+  exports: [RestaurantsService, RestaurantTypesService, FavoritesService],
 })
 export class RestaurantsModule { }

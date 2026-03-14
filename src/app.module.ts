@@ -10,7 +10,7 @@ import { MenusModule } from './modules/menus/menus.module';
 import { OrdersModule } from './modules/orders/orders.module';
 import { UsersModule } from './modules/users/users.module';
 import { APP_GUARD } from '@nestjs/core';
-import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
+import { SessionAuthGuard } from './common/guards/session-auth.guard';
 import { AuthModule } from './modules/auth/auth.module';
 import { RolesGuard } from './common/guards/role.guard';
 import { SseModule } from './modules/sse/sse.module';
@@ -42,7 +42,7 @@ import { DevToolsModule } from './modules/dev-tools/dev-tools.module';
   providers: [
     {
       provide: APP_GUARD,
-      useClass: JwtAuthGuard,
+      useClass: SessionAuthGuard,
     },
     {
       provide: APP_GUARD,

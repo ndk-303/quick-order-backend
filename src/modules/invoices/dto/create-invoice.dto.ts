@@ -103,7 +103,7 @@ class InvoiceItemDto {
 
 export class CreateInvoiceDto {
     @ApiPropertyOptional({
-        description: 'ID của người dùng (tự động lấy từ JWT token, không cần gửi từ client)',
+        description: 'ID của người dùng (tự động lấy từ session nếu đã đăng nhập, không cần gửi từ client)',
         example: '507f1f77bcf86cd799439011',
         type: String
     })

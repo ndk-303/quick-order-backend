@@ -7,12 +7,15 @@ import {
 import { InjectModel } from '@nestjs/mongoose';
 import { User, UserDocument } from '../users/schemas/user.schema';
 import { Model } from 'mongoose';
-import { JwtService } from '@nestjs/jwt';
 import { RegisterDto } from './dto/register.dto';
 import { comparePassword, hashPassword } from 'src/common/utils/password.util';
 import { LoginDto } from './dto/login.dto';
-import { Payload } from 'src/common/interfaces/payload.interface';
-import { GoogleUserProfile } from 'src/common/interfaces/http-request.interface';
+
+export interface SessionUser {
+  userId: string;
+  role: string;
+  restaurantId?: string | null;
+}
 
 @Injectable()
 export class AuthService {
@@ -20,7 +23,6 @@ export class AuthService {
 
   constructor(
     @InjectModel(User.name) private userModel: Model<UserDocument>,
-    private jwtService: JwtService,
   ) { }
 
   async register(registerDto: RegisterDto) {
@@ -46,8 +48,6 @@ export class AuthService {
       otpExpiry: otpExpiry,
     });
 
-    this.logger.debug(`[OTP] Registration OTP for ${phoneNumber}: ${otp}`);
-
     return {
       message: 'Đăng ký thành công. Vui lòng kiểm tra mã OTP để kích hoạt tài khoản.',
       _id: newUser._id,
@@ -55,9 +55,8 @@ export class AuthService {
     };
   }
 
-  async login(loginDto: LoginDto) {
+  async login(loginDto: LoginDto): Promise<{ user: SessionUser & Record<string, unknown> }> {
     const { phoneNumber, password } = loginDto;
-    this.logger.debug(`Login attempt for phone: ${phoneNumber}`);
     const user = await this.userModel
       .findOne({ phoneNumber })
       .select('_id fullName email phoneNumber password role restaurantId authProviders isActive');
@@ -79,90 +78,23 @@ export class AuthService {
       throw new UnauthorizedException('Tài khoản chưa được kích hoạt. Vui lòng xác thực OTP.');
     }
 
-    const { accessToken, refreshToken } = this.generateTokens(user);
-
-    await this.userModel.updateOne(
-      { _id: user._id },
-      { refreshToken: refreshToken },
-    );
-
     return {
-      accessToken: accessToken,
-      refreshToken: refreshToken,
       user: {
-        _id: user._id,
+        userId: user._id.toString(),
+        role: user.role,
+        restaurantId: user.restaurantId?.toString() ?? null,
+        // Extra info for response
         fullName: user.fullName,
         email: user.email,
         phoneNumber: user.phoneNumber,
-        role: user.role,
-        restaurantId: user.restaurantId,
-        authProviders: user.authProviders,
       },
-      message: 'Đăng nhập thành công',
     };
   }
 
-  async logout(userId: string) {
-    await this.userModel.updateOne({ _id: userId }, { refreshToken: null });
-
+  async logout() {
     return {
       message: 'Đăng xuất thành công',
     };
-  }
-
-  async refreshToken(refreshToken: string) {
-    try {
-      const payload: Payload = this.jwtService.verify(refreshToken);
-
-      const user = await this.userModel
-        .findById(payload.sub)
-        .select('+refreshToken fullName email phoneNumber authProviders');
-
-      if (!user || user.refreshToken !== refreshToken) {
-        throw new UnauthorizedException('Refresh token không hợp lệ');
-      }
-
-      const tokens = this.generateTokens(user);
-
-      await this.userModel.updateOne(
-        { _id: user._id },
-        { refreshToken: tokens.refreshToken },
-      );
-
-      return {
-        accessToken: tokens.accessToken,
-        refreshToken: tokens.refreshToken,
-        user: {
-          _id: user._id,
-          fullName: user.fullName,
-          email: user.email,
-          phoneNumber: user.phoneNumber,
-          role: user.role,
-          restaurantId: user.restaurantId,
-          authProviders: user.authProviders,
-        },
-      };
-    } catch {
-      throw new UnauthorizedException('Refresh token hết hạn');
-    }
-  }
-
-  private generateTokens(user: UserDocument) {
-    const payload = {
-      sub: user._id.toString(),
-      role: user.role,
-      restaurantId: user?.restaurantId,
-    };
-
-    const accessToken = this.jwtService.sign(payload, {
-      expiresIn: '1h',
-    });
-
-    const refreshToken = this.jwtService.sign(payload, {
-      expiresIn: '30d',
-    });
-
-    return { accessToken, refreshToken };
   }
 
   async verifyAccount(phoneNumber: string, otp: string) {
@@ -282,78 +214,15 @@ export class AuthService {
 
     const hashedPassword = await hashPassword(newPassword);
 
-    // Reset password and clear OTP
     await this.userModel.updateOne(
       { _id: user._id },
       {
         password: hashedPassword,
-        refreshToken: null,
         verificationOtp: null,
         otpExpiry: null,
       },
     );
 
     return { message: 'Đặt lại mật khẩu thành công' };
-  }
-
-  async googleLogin(googleUser: GoogleUserProfile) {
-    try {
-      this.logger.debug(`Google login attempt for: ${googleUser.email}`);
-
-      // Find user by googleId or email
-      let user = await this.userModel.findOne({
-        $or: [
-          { googleId: googleUser.id },
-          { email: googleUser.email },
-        ],
-      });
-
-      if (!user) {
-        this.logger.debug('Creating new user from Google profile');
-        // Create new user from Google profile
-        user = await this.userModel.create({
-          googleId: googleUser.id,
-          email: googleUser.email,
-          fullName: `${googleUser.firstName} ${googleUser.lastName}`.trim() || googleUser.email,
-          authProviders: ['google'],
-          address: '',
-        });
-      } else if (!user.googleId) {
-        // Link Google account to existing user
-        this.logger.debug(`Linking Google account to existing user: ${user._id}`);
-        user.googleId = googleUser.id;
-        if (!user.email) {
-          user.email = googleUser.email;
-        }
-        if (!user.authProviders.includes('google')) {
-          user.authProviders.push('google');
-        }
-        await user.save();
-      }
-
-      // Generate tokens
-      const tokens = this.generateTokens(user);
-
-      // Update refresh token
-      await this.userModel.updateOne(
-        { _id: user._id },
-        { refreshToken: tokens.refreshToken },
-      );
-
-      return {
-        accessToken: tokens.accessToken,
-        refreshToken: tokens.refreshToken,
-        user: {
-          _id: user._id,
-          fullName: user.fullName,
-          email: user.email,
-          phoneNumber: user.phoneNumber,
-          authProviders: user.authProviders,
-        },
-      };
-    } catch (error) {
-      this.logger.error(`Google login error: ${error.message}`, error.stack);
-      throw new BadRequestException('Đăng nhập Google thất bại: ' + error.message);
-    }
   }
 }

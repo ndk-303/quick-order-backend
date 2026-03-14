@@ -1,12 +1,10 @@
 import { Controller, Post, Body, Get, Query, Req, Res, Ip } from '@nestjs/common';
 import { PaymentsService } from './payments.service';
 import { CreatePaymentDto } from './dto/create-payment.dto';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import type { Response } from 'express';
 import { ConfigService } from '@nestjs/config';
 import { Public } from 'src/common/decorators/public.decorator';
 
-@ApiTags('Payments')
 @Controller('payments')
 export class PaymentsController {
     constructor(
@@ -14,19 +12,13 @@ export class PaymentsController {
         private readonly configService: ConfigService
     ) { }
 
+    @Public()
     @Post()
-    @ApiBearerAuth('JWT')
-    @ApiOperation({ summary: 'Process payment (Create Sepay/VNPAY payment request)' })
-    @ApiResponse({ status: 201, description: 'Payment request created' })
-    @ApiResponse({ status: 400, description: 'Invalid payment data' })
     create(@Body() createPaymentDto: CreatePaymentDto, @Ip() ip) {
         return this.paymentsService.processPayment(createPaymentDto, ip);
     }
     @Public()
     @Get('vnpay_return')
-    @ApiOperation({ summary: 'VNPAY Return URL' })
-    @ApiResponse({ status: 200, description: 'Payment successful' })
-    @ApiResponse({ status: 400, description: 'Invalid payment data' })
     async vnpayReturn(@Query() query: any, @Res() res: Response) {
         try {
             const result: any = await this.paymentsService.verifyReturnUrl(query);
@@ -50,9 +42,6 @@ export class PaymentsController {
 
     @Public()
     @Get('vnpay_ipn')
-    @ApiOperation({ summary: 'VNPAY IPN URL' })
-    @ApiResponse({ status: 200, description: 'Payment successful' })
-    @ApiResponse({ status: 400, description: 'Invalid payment data' })
     async vnpayIpn(@Query() query: any) {
         return this.paymentsService.vnpayIpn(query);
     }

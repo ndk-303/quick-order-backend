@@ -54,7 +54,6 @@ export class TablesService {
       console.log('Failed to create table', error);
       throw new BadRequestException('Failed to create table');
     }
-
   }
 
   async generateQrCode(tableId: string) {
@@ -66,9 +65,8 @@ export class TablesService {
 
     // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
     const qrUrl = `${this.configService.get('FRONTEND_URL')}/menus/${table.restaurant}/${table._id}?token=${table.token}`;
-
     const qrImage = await QRCode.toDataURL(qrUrl);
-
+    await this.update(table._id.toString(), { ...table, qrImage: qrImage });
     return {
       tableId: table._id,
       qr_image: qrImage,
@@ -112,9 +110,7 @@ export class TablesService {
   }
 
   async update(_id: string, updateTableDto: UpdateTableDto) {
-    console.log(updateTableDto);
     const table = await this.tableModel.findByIdAndUpdate(_id, updateTableDto);
-    console.log(table);
     if (!table) {
       throw new NotFoundException('Table not found');
     }
