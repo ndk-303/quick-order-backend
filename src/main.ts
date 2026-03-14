@@ -7,13 +7,14 @@ import { ValidationPipe } from '@nestjs/common';
 import session from 'express-session';
 import MongoStore from 'connect-mongo';
 import passport from 'passport';
+import { NestExpressApplication } from '@nestjs/platform-express';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule, {
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     bufferLogs: true,
   });
 
-
+  app.set('trust proxy', 1);
   // Update CORS options
   app.enableCors({
     origin: [
@@ -39,8 +40,8 @@ async function bootstrap() {
       }),
       cookie: {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+        secure: true,
+        sameSite: 'none',
         maxAge: 7 * 24 * 60 * 60 * 1000, // 7 ngày (ms)
       },
     }),
