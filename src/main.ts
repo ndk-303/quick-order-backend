@@ -9,18 +9,18 @@ import MongoStore from 'connect-mongo';
 import passport from 'passport';
 
 async function bootstrap() {
-  const app = await NestFactory.create<import('@nestjs/platform-express').NestExpressApplication>(AppModule, {
+  const app = await NestFactory.create(AppModule, {
     bufferLogs: true,
   });
 
-  // Enable proxy trust for Render to allow Express to set secure cookies
-  app.set('trust proxy', 1);
 
   // Update CORS options
   app.enableCors({
-    origin: (origin, callback) => {
-      callback(null, true);
-    },
+    origin: [
+      'http://localhost:5173',
+      'https://quick-order-dashboard-red.vercel.app',
+      'https://quick-order-frontend.vercel.app'
+    ],
     credentials: true,
   });
 
