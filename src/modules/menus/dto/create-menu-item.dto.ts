@@ -24,7 +24,7 @@ class MenuItemOptionDto {
   @IsNumber({}, { message: 'Giá tùy chọn phải là số' })
   @IsNotEmpty({ message: 'Giá tùy chọn không được để trống' })
   @Min(0, { message: 'Giá tùy chọn phải lớn hơn hoặc bằng 0' })
-  @Type(() => Number)
+  @Transform(({ value }) => Number(value))
   price: number;
 }
 
@@ -60,7 +60,7 @@ export class CreateMenuItemDto {
   @IsNumber({}, { message: 'Giá món ăn phải là số' })
   @IsNotEmpty({ message: 'Giá món ăn không được để trống' })
   @Min(0, { message: 'Giá món ăn phải lớn hơn hoặc bằng 0' })
-  @Type(() => Number)
+  @Transform(({ value }) => Number(value))
   price: number;
 
   @IsUrl({}, { message: 'Đường dẫn hình ảnh không hợp lệ' })
@@ -73,7 +73,7 @@ export class CreateMenuItemDto {
 
   @IsBoolean({ message: 'Trạng thái hiển thị phải là kiểu boolean' })
   @IsOptional()
-  @Type(() => Boolean)
+  @Transform(({ value }) => value === 'true' || value === true)
   isAvailable?: boolean;
 
   @IsArray({ message: 'Danh sách nhóm tùy chọn phải là mảng' })
