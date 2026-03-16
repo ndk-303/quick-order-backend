@@ -43,8 +43,9 @@ export class MenusController {
     file: Express.Multer.File,
   ) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    console.log("BODY:", req.body);
+    console.log("DTO:", createMenuItemDto);
     const restaurantId = (req as any).user?.restaurantId as string;
-    console.log('User:', req.user);
     if (!restaurantId) {
       throw new BadRequestException('Tài khoản chưa được liên kết với nhà hàng nào');
     }
