@@ -16,7 +16,8 @@ export class OrdersController {
   create(@Body() createOrderDto: CreateOrderDto, @Req() req: any) {
     // Client anonymous có thể order, userId từ session nếu có (optional)
     const userId = req.session?.user?.userId ?? null;
-    return this.ordersService.create(createOrderDto, userId);
+    const guestId = req.sessionID;
+    return this.ordersService.create(createOrderDto, userId, guestId);
   }
 
   @Get()
@@ -34,7 +35,8 @@ export class OrdersController {
   findAllClient(@Req() req: any, @Query('status') status: string[]) {
     // Client anonymous dùng session để track orders
     const userId = req.session?.user?.userId ?? null;
-    return this.ordersService.findAllForClient(userId, status);
+    const guestId = req.sessionID;
+    return this.ordersService.findAllForClient(userId, guestId, status);
   }
 
   @Public()

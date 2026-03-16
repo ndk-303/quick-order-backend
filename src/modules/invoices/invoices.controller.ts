@@ -12,17 +12,20 @@ export class InvoicesController {
     async create(@Body() createInvoiceDto: CreateInvoiceDto, @Req() req: any) {
         // Client anonymous có thể tạo invoice, gắn userId nếu đã đăng nhập
         const userId = req.session?.user?.userId;
+        const guestId = req.sessionID;
         if (userId) {
             createInvoiceDto.userId = userId;
         }
-        const invoice = await this.invoicesService.create(createInvoiceDto);
+        const invoice = await this.invoicesService.create(createInvoiceDto, guestId);
         return invoice;
     }
 
+    @Public()
     @Get()
     async findUserInvoices(@Req() req: any) {
-        const userId = req.user.userId;
-        return this.invoicesService.findByUser(userId);
+        const userId = req.session?.user?.userId ?? null;
+        const guestId = req.sessionID;
+        return this.invoicesService.findByUser(userId, guestId);
     }
 
     @Get('restaurant')

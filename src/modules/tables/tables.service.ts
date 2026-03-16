@@ -38,7 +38,7 @@ export class TablesService {
       });
 
       // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
-      const qrUrl = `${this.configService.get('FRONTEND_URL')}/menus/${table.restaurant}/${table._id}`;
+      const qrUrl = `${this.configService.get('FRONTEND_URL')}/menu/${table.restaurant}/${table._id}`;
       const qrImage = await QRCode.toDataURL(qrUrl);
       await this.tableModel.findByIdAndUpdate(table._id, { qrImage: qrImage });
 

@@ -20,7 +20,8 @@ async function bootstrap() {
     origin: [
       'http://localhost:5173',
       'https://quick-order-dashboard-red.vercel.app',
-      'https://quick-order-frontend.vercel.app'
+      'https://quick-order-frontend.vercel.app',
+      'https://qr-client-kappa.vercel.app',
     ],
     credentials: true,
   });

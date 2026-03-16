@@ -22,7 +22,7 @@ export class InvoicesService {
         private readonly sseService: SseService,
     ) { }
 
-    async create(createInvoiceDto: CreateInvoiceDto) {
+    async create(createInvoiceDto: CreateInvoiceDto, guestId: string) {
         const { restaurantId, tableId, items, userId } = createInvoiceDto;
 
         // 1. Validate restaurant and table
@@ -84,7 +84,8 @@ export class InvoicesService {
         }
 
         const newInvoice = await this.invoiceModel.create({
-            userId: new Types.ObjectId(userId),
+            ...(userId ? { userId: new Types.ObjectId(userId) } : {}),
+            guestId,
             restaurantId: new Types.ObjectId(restaurantId),
             tableId: new Types.ObjectId(tableId),
             items: invoiceItems,
@@ -143,11 +144,16 @@ export class InvoicesService {
         return invoice;
     }
 
-    async findByUser(userId: string, pagination: PaginationDto = {}): Promise<PaginatedResult<InvoiceDocument>> {
+    async findByUser(userId: string | null, guestId: string, pagination: PaginationDto = {}): Promise<PaginatedResult<InvoiceDocument>> {
         const page = pagination.page ?? 1;
         const limit = pagination.limit ?? 10;
         const skip = (page - 1) * limit;
-        const filter = { userId: new Types.ObjectId(userId), status: InvoiceStatus.PAID };
+
+        const userFilter = userId
+            ? { $or: [{ userId: new Types.ObjectId(userId) }, { guestId }] }
+            : { guestId };
+
+        const filter = { ...userFilter, status: InvoiceStatus.PAID };
 
         const [invoices, total] = await Promise.all([
             this.invoiceModel

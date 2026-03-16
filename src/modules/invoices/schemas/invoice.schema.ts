@@ -45,8 +45,11 @@ export class InvoiceItemSnapshot {
 
 @Schema({ timestamps: true })
 export class Invoice {
-    @Prop({ type: Types.ObjectId, ref: User.name, required: true })
-    userId: Types.ObjectId;
+    @Prop({ type: Types.ObjectId, ref: User.name, required: false })
+    userId?: Types.ObjectId;
+
+    @Prop({ type: String, required: false })
+    guestId?: string;
 
     @Prop({ type: Types.ObjectId, ref: Restaurant.name, required: true })
     restaurantId: Types.ObjectId;
