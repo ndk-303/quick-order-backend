@@ -44,7 +44,7 @@ export class OrdersService {
     private readonly sseService: SseService,
   ) { }
 
-  async create(createOrderDto: CreateOrderDto, userId: string) {
+  async create(createOrderDto: CreateOrderDto, userId: string | null, guestId: string) {
     const { restaurantId, tableId, items } = createOrderDto;
     const [restaurant, table] = await Promise.all([
       this.restaurantModel.findById(restaurantId),
@@ -59,8 +59,12 @@ export class OrdersService {
       throw new BadRequestException('Bàn không hợp lệ!');
     }
 
+    const userFilter = userId
+      ? { $or: [{ userId: new Types.ObjectId(userId) }, { guestId }] }
+      : { guestId };
+
     const existingOrders = await this.orderModel.find({
-      userId: new Types.ObjectId(userId),
+      ...userFilter,
       tableId: new Types.ObjectId(tableId)
     });
     this.logger.debug(`Found ${existingOrders.length} existing order(s) for table ${tableId}`);
@@ -108,7 +112,8 @@ export class OrdersService {
     }
 
     const newOrder = await this.orderModel.create({
-      userId,
+      ...(userId ? { userId: new Types.ObjectId(userId) } : {}),
+      guestId,
       restaurantId,
       tableId,
       items: snapshotItems,
@@ -128,7 +133,7 @@ export class OrdersService {
       restaurantId: order?.restaurantId.toString(),
       tableId: order?.tableId.toString(),
       payload: order,
-      userId: order?.userId.toString(),
+      userId: order?.userId?.toString(),
     });
 
     return {
@@ -169,7 +174,7 @@ export class OrdersService {
     this.sseService.emit({
       type: SseEventType.ORDER_UPDATED,
       restaurantId: populatedOrder?.restaurantId._id.toString(),
-      userId: populatedOrder?.userId.toString(),
+      userId: populatedOrder?.userId?.toString(),
       payload: populatedOrder,
     });
 
@@ -208,7 +213,8 @@ export class OrdersService {
   }
 
   async findAllForClient(
-    userId: string,
+    userId: string | null,
+    guestId: string,
     status: string[],
     pagination: PaginationDto = {},
   ): Promise<PaginatedResult<Order>> {
@@ -216,7 +222,11 @@ export class OrdersService {
     const limit = pagination.limit ?? 10;
     const skip = (page - 1) * limit;
 
-    const filter = { userId: new Types.ObjectId(userId), status: { $in: status } };
+    const userFilter = userId
+      ? { $or: [{ userId: new Types.ObjectId(userId) }, { guestId }] }
+      : { guestId };
+
+    const filter = { ...userFilter, status: { $in: status } };
 
     const [orders, total] = await Promise.all([
       this.orderModel
@@ -251,7 +261,8 @@ export class OrdersService {
     }));
 
     const newOrder = new this.orderModel({
-      userId: invoice.userId,
+      ...(invoice.userId ? { userId: invoice.userId } : {}),
+      ...(invoice.guestId ? { guestId: invoice.guestId } : {}),
       restaurantId: invoice.restaurantId,
       tableId: invoice.tableId,
       items: orderItems,
@@ -272,7 +283,7 @@ export class OrdersService {
       restaurantId: populatedOrder?.restaurantId._id.toString(),
       tableId: populatedOrder?.tableId._id.toString(),
       payload: populatedOrder,
-      userId: populatedOrder?.userId.toString(),
+      userId: populatedOrder?.userId?.toString(),
     });
 
     this.logger.debug(`[invoice.paid] Order ${savedOrder._id} created successfully`);

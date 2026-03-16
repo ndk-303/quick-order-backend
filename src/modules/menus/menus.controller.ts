@@ -44,6 +44,7 @@ export class MenusController {
   ) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const restaurantId = (req as any).user?.restaurantId as string;
+    console.log('User:', req.user);
     if (!restaurantId) {
       throw new BadRequestException('Tài khoản chưa được liên kết với nhà hàng nào');
     }
@@ -82,7 +83,6 @@ export class MenusController {
 
   @Get()
   @UseInterceptors(CacheInterceptor)
-  @CacheTTL(120000) // 2 minutes - admin needs fresher data
   async getMenuForAdmin(
     @Req() req: any,
     @Query() filters: MenuFilterDto,
