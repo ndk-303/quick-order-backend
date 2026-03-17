@@ -121,11 +121,17 @@ export class TablesService {
   }
 
   async remove(_id: string) {
-    const table = await this.tableModel.findByIdAndDelete(_id);
+    const table = await this.tableModel.findById(_id);
 
     if (!table) {
       throw new NotFoundException('Table not found');
     }
+
+    if (!table.isActive) {
+      throw new BadRequestException('Table is not active');
+    }
+
+    await this.tableModel.findByIdAndDelete(_id);
 
     await this.cacheManager.del(this.getCacheKey(String(table.restaurant)));
 
