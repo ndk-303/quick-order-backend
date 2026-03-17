@@ -8,6 +8,7 @@ import { Table, TableDocument } from './schemas/table.schema';
 import { UpdateTableDto } from './dto/update-table.dto';
 import { ConfigService } from '@nestjs/config';
 import { CreateTableDto } from './dto/create-table.dto';
+import { Order, OrderDocument } from '../orders/schemas/order.schema';
 const { v4: uuidv4 } = require('uuid');
 
 @Injectable()
@@ -17,6 +18,8 @@ export class TablesService {
     private readonly tableModel: Model<TableDocument>,
     private readonly configService: ConfigService,
     @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
+    @InjectModel(Order.name)
+    private readonly orderModel: Model<OrderDocument>,
   ) { }
 
   private getCacheKey(restaurantId: string): string {
@@ -121,18 +124,14 @@ export class TablesService {
   }
 
   async remove(_id: string) {
-    const table = await this.tableModel.findById(_id);
-
+    const order = await this.orderModel.findOne({ table: _id }).sort({ createdAt: -1 });
+    if (order && order.status !== 'COMPLETED' && order.status !== 'CANCELED') {
+      throw new BadRequestException('Table has orders');
+    }
+    const table = await this.tableModel.findByIdAndDelete(_id);
     if (!table) {
       throw new NotFoundException('Table not found');
     }
-
-    if (!table.isActive) {
-      throw new BadRequestException('Table is not active');
-    }
-
-    await this.tableModel.findByIdAndDelete(_id);
-
     await this.cacheManager.del(this.getCacheKey(String(table.restaurant)));
 
     return {
