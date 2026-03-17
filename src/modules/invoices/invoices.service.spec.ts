@@ -45,6 +45,7 @@ describe('InvoicesService', () => {
   };
 
   const userId = new Types.ObjectId().toString();
+  const guestId = 'guest-session-123';
   const restaurantId = new Types.ObjectId().toString();
   const tableId = new Types.ObjectId().toString();
   const invoiceId = new Types.ObjectId().toString();
@@ -173,13 +174,14 @@ describe('InvoicesService', () => {
       const populatedInvoice = makeInvoiceDoc();
       invoiceModel.findById.mockReturnValue(makeQueryChain(populatedInvoice));
 
-      const result = await service.create(dto as any);
+      const result = await service.create(dto as any, guestId);
 
       expect(validateMenuItemOptions).toHaveBeenCalledWith(menuItem, dto.items[0].selectedOptions);
       expect(calculateItemTotal).toHaveBeenCalledWith(30000, 2, dto.items[0].selectedOptions);
       expect(invoiceModel.create).toHaveBeenCalledWith(
         expect.objectContaining({
           userId: expect.any(Types.ObjectId),
+          guestId,
           restaurantId: expect.any(Types.ObjectId),
           tableId: expect.any(Types.ObjectId),
           totalAmount: 70000,
@@ -202,8 +204,8 @@ describe('InvoicesService', () => {
       restaurantModel.findById.mockResolvedValue(null);
       tableModel.findById.mockResolvedValue({ _id: new Types.ObjectId(tableId) });
 
-      await expect(service.create(dto as any)).rejects.toThrow(BadRequestException);
-      await expect(service.create(dto as any)).rejects.toThrow('Nhà hàng không hợp lệ!');
+      await expect(service.create(dto as any, guestId)).rejects.toThrow(BadRequestException);
+      await expect(service.create(dto as any, guestId)).rejects.toThrow('Nhà hàng không hợp lệ!');
     });
 
     it('throws when table is invalid', async () => {
@@ -211,8 +213,8 @@ describe('InvoicesService', () => {
       restaurantModel.findById.mockResolvedValue({ _id: new Types.ObjectId(restaurantId) });
       tableModel.findById.mockResolvedValue(null);
 
-      await expect(service.create(dto as any)).rejects.toThrow(BadRequestException);
-      await expect(service.create(dto as any)).rejects.toThrow('Bàn không hợp lệ!');
+      await expect(service.create(dto as any, guestId)).rejects.toThrow(BadRequestException);
+      await expect(service.create(dto as any, guestId)).rejects.toThrow('Bàn không hợp lệ!');
     });
 
     it('throws when menu item does not exist or unavailable', async () => {
@@ -221,8 +223,8 @@ describe('InvoicesService', () => {
       tableModel.findById.mockResolvedValue({ _id: new Types.ObjectId(tableId) });
       menuItemModel.find.mockResolvedValue([]);
 
-      await expect(service.create(dto as any)).rejects.toThrow(BadRequestException);
-      await expect(service.create(dto as any)).rejects.toThrow(
+      await expect(service.create(dto as any, guestId)).rejects.toThrow(BadRequestException);
+      await expect(service.create(dto as any, guestId)).rejects.toThrow(
         `Món ăn với ID ${menuItemId} không tồn tại`,
       );
     });
@@ -252,7 +254,7 @@ describe('InvoicesService', () => {
       invoiceModel.findById.mockReturnValue(makeQueryChain(makeInvoiceDoc({ totalAmount: 20000 })));
       (calculateItemTotal as jest.Mock).mockReturnValue({ optionsPrice: 0, lineTotal: 20000 });
 
-      await service.create(dto as any);
+      await service.create(dto as any, guestId);
 
       expect(invoiceModel.create).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -327,10 +329,10 @@ describe('InvoicesService', () => {
       invoiceModel.find.mockReturnValue(findChain);
       invoiceModel.countDocuments.mockResolvedValue(7);
 
-      const result = await service.findByUser(userId, { page: 2, limit: 3 });
+      const result = await service.findByUser(userId, guestId, { page: 2, limit: 3 });
 
       expect(invoiceModel.find).toHaveBeenCalledWith({
-        userId: expect.any(Types.ObjectId),
+        $or: [{ userId: expect.any(Types.ObjectId) }, { guestId }],
         status: InvoiceStatus.PAID,
       });
       expect(findChain.sort).toHaveBeenCalledWith({ createdAt: -1 });
@@ -350,7 +352,7 @@ describe('InvoicesService', () => {
       invoiceModel.find.mockReturnValue(findChain);
       invoiceModel.countDocuments.mockResolvedValue(0);
 
-      const result = await service.findByUser(userId);
+      const result = await service.findByUser(userId, guestId);
 
       expect(findChain.skip).toHaveBeenCalledWith(0);
       expect(findChain.limit).toHaveBeenCalledWith(10);
