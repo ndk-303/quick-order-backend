@@ -27,16 +27,15 @@ export class PaymentsController {
             const invoiceId = query.vnp_TxnRef;
 
             if (result && (result.success || result._id)) {
-                return res.redirect(`${frontendUrl}/orders?status=success&invoiceId=${result._id || invoiceId}`);
+                return res.redirect(`${frontendUrl}/vnpay-result?status=success&invoiceId=${result._id || invoiceId}`);
             } else {
-                return res.redirect(`${frontendUrl}/invoice/${invoiceId}?status=failed`);
+                return res.redirect(`${frontendUrl}/vnpay-result?status=failed&invoiceId=${invoiceId}`);
             }
         } catch (error) {
             console.error('Error in vnpayReturn:', error);
             const frontendUrl = this.configService.get<string>('FRONTEND_URL');
             const invoiceId = query.vnp_TxnRef;
-            // Error: redirect back to invoice page with error message
-            return res.redirect(`${frontendUrl}/invoice/${invoiceId}?status=error&message=${encodeURIComponent(error.message || 'Unknown error')}`);
+            return res.redirect(`${frontendUrl}/vnpay-result?status=error&message=${encodeURIComponent(error.message || 'Unknown error')}`);
         }
     }
 
