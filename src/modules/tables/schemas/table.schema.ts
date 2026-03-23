@@ -18,10 +18,11 @@ export class Table {
   @Prop({ type: String, required: true })
   token: string;
 
+  @Prop({ type: Boolean, default: true })
+  isActive: boolean;
+
   @Prop({ type: String, required: false })
   qrImage: string;
-
-
 }
 
 export const TableSchema = SchemaFactory.createForClass(Table);
