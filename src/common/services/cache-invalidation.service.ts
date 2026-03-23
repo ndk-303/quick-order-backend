@@ -24,7 +24,7 @@ export class CacheInvalidationService {
    */
     async invalidateMenu(restaurantId: string): Promise<void> {
         // Delete admin menu cache (exact key based on CacheInterceptor URL)
-        await this.cacheManager.del('/api/menus');
+        await this.cacheManager.del('/api/menu');
 
         // Delete client menu caches for this restaurant (pattern-based)
         // CacheInterceptor uses the full URL path as cache key
@@ -33,7 +33,7 @@ export class CacheInvalidationService {
             const store = (this.cacheManager as any).store;
             if (store?.getClient) {
                 const client = store.getClient();
-                const pattern = `/api/menus/${restaurantId}/*`;
+                const pattern = `/api/menu/${restaurantId}/*`;
                 const keys = await client.keys(pattern);
                 if (keys.length > 0) {
                     await client.del(keys);
@@ -48,7 +48,7 @@ export class CacheInvalidationService {
      * Invalidate Menu Item by ID cache
      */
     async invalidateMenuItem(itemId: string): Promise<void> {
-        await this.cacheManager.del(`menus/${itemId}`);
+        await this.cacheManager.del(`menu/${itemId}`);
     }
 
     /**
