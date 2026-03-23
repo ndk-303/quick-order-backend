@@ -64,7 +64,7 @@ export class TablesService {
     }
 
     // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
-    const qrUrl = `${this.configService.get('FRONTEND_URL')}/menus/${table.restaurant}/${table._id}?token=${table.token}`;
+    const qrUrl = `${this.configService.get('FRONTEND_URL')}/menu/${table.restaurant}/${table._id}?token=${table.token}`;
     const qrImage = await QRCode.toDataURL(qrUrl);
     await this.update(table._id.toString(), { ...table, qrImage: qrImage });
     return {

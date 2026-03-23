@@ -106,6 +106,7 @@ export class OrdersService {
         quantity: itemDto.quantity,
         selectedOptions: itemDto.selectedOptions || [],
         note: itemDto.note,
+        imageUrl: dbItem.imageUrl,
         status: OrderStatus.PENDING,
         category: dbItem.category,
       });
@@ -256,6 +257,7 @@ export class OrdersService {
       quantity: item.quantity,
       selectedOptions: item.selectedOptions || [],
       note: item.note,
+      imageUrl: item.imageUrl,
       status: OrderStatus.PENDING,
       category: item.category,
     }));

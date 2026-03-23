@@ -153,7 +153,7 @@ export class MenusService {
         restaurant: restaurantId,
       })
       .select('_id name restaurant')
-      .populate('restaurant', '_id name')
+      .populate('restaurant', '_id name imageUrl')
       .exec();
 
     if (!table) {

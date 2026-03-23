@@ -19,6 +19,7 @@ async function bootstrap() {
   app.enableCors({
     origin: [
       'http://localhost:5173',
+      'http://localhost:3111',
       'https://quick-order-dashboard-red.vercel.app',
       'https://quick-order-frontend.vercel.app',
       'https://qr-client-kappa.vercel.app',
@@ -29,6 +30,7 @@ async function bootstrap() {
   app.use(cookieParser());
 
   const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/quick-order';
+  const isProduction = process.env.NODE_ENV === 'production';
   app.use(
     session({
       secret: process.env.SESSION_SECRET || 'quick-order-secret-key',
@@ -41,8 +43,10 @@ async function bootstrap() {
       }),
       cookie: {
         httpOnly: true,
-        secure: true,
-        sameSite: 'none',
+        // secure:true + sameSite:none chỉ hoạt động qua HTTPS (production)
+        // Ở localhost (HTTP) cần secure:false + sameSite:lax để browser lưu cookie
+        secure: isProduction,
+        sameSite: isProduction ? 'none' : 'lax',
         maxAge: 7 * 24 * 60 * 60 * 1000, // 7 ngày (ms)
       },
     }),

@@ -78,8 +78,9 @@ export class MenusController {
     // Lưu context vào session khi client quét QR
     // Dùng cho các request order/thanh toán sau này
     req.session.tableContext = { restaurantId, tableId };
-
-    return this.menusService.getMenuForClient(restaurantId, tableId, filters);
+    const menus = await this.menusService.getMenuForClient(restaurantId, tableId, filters);
+    console.log("Menus: ", menus);
+    return menus;
   }
 
   @Get()

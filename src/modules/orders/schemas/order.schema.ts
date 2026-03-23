@@ -33,6 +33,9 @@ export class OrderItemSnapshot {
   @Prop()
   note: string;
 
+  @Prop()
+  imageUrl?: string;
+
   @Prop({
     type: String,
     enum: Object.values(OrderStatus),

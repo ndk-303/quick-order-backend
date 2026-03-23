@@ -39,6 +39,9 @@ export class InvoiceItemSnapshot {
     @Prop()
     note: string;
 
+    @Prop()
+    imageUrl?: string;
+
     @Prop({ type: String, enum: Object.values(MenuCategory), required: true })
     category: MenuCategory;
 }
