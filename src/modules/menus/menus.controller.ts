@@ -75,7 +75,14 @@ export class MenusController {
   ) {
     // Lưu context vào session khi client quét QR
     // Dùng cho các request order/thanh toán sau này
-    req.session.tableContext = { restaurantId, tableId };
+    try {
+      if (req.session) {
+        req.session.tableContext = { restaurantId, tableId };
+      }
+    } catch (e) {
+      // Session store không khả dụng (VD: cold start trên Render), bỏ qua
+      console.warn('Session store error (non-fatal):', e?.message);
+    }
     const menus = await this.menusService.getMenuForClient(restaurantId, tableId, filters);
     console.log("Menus: ", menus);
     return menus;
